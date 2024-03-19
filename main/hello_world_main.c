@@ -5,6 +5,7 @@
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 #include "driver/i2c.h"
+#include "driver/ledc.h"
 
 typedef unsigned char u8;
 
@@ -20,7 +21,41 @@ u8 dec2bcd(u8 a)
 
 void app_main(void)
 {
+	//PWM
+	ledc_timer_config_t timer;
+	timer.speed_mode = LEDC_LOW_SPEED_MODE;
+	timer.timer_num = LEDC_TIMER_0;
+	timer.duty_resolution = LEDC_TIMER_13_BIT;
+	timer.freq_hz = 5000;
+	timer.clk_cfg = LEDC_AUTO_CLK;
+	ledc_timer_config(&timer);
 
+	ledc_channel_config_t ledc_channel;
+	ledc_channel.speed_mode = LEDC_LOW_SPEED_MODE;
+	ledc_channel.channel = LEDC_CHANNEL_0;
+	ledc_channel.timer_sel = LEDC_TIMER_0;
+	ledc_channel.intr_type =  LEDC_INTR_FADE_END;
+	ledc_channel.gpio_num = 16;
+	ledc_channel.duty = 8192;
+	ledc_channel.hpoint = 0;
+	ledc_channel_config(&ledc_channel);
+
+	vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+	while(true)
+	{
+		ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 6154);
+		ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 5000);
+		ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 1600);
+		ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
+
+	/*//I2C and RTC
 	u8 buf[7];
     printf("Hello world!\n");
     i2c_config_t conf={};
@@ -41,14 +76,15 @@ void app_main(void)
     buf[5]=dec2bcd(3) | (1<<7); //month
     buf[6]=dec2bcd(24);
 
-//    i2c_cmd_handle_t handle = i2c_cmd_link_create();
-//    i2c_master_start(handle);
-//    i2c_master_write_byte(handle, 0xa2, true);
-//    i2c_master_write_byte(handle, 0x02, true);
-//    i2c_master_write(handle, buf, 7, true);
-//    i2c_master_stop(handle);
-//    i2c_master_cmd_begin(I2C_NUM_0, handle, 1000/portTICK_PERIOD_MS);
-//    i2c_cmd_link_delete(handle);
+
+    i2c_cmd_handle_t handle = i2c_cmd_link_create();
+    i2c_master_start(handle);
+    i2c_master_write_byte(handle, 0xa2, true);
+    i2c_master_write_byte(handle, 0x02, true);
+    i2c_master_write(handle, buf, 7, true);
+    i2c_master_stop(handle);
+    i2c_master_cmd_begin(I2C_NUM_0, handle, 1000/portTICK_PERIOD_MS);
+    i2c_cmd_link_delete(handle);
 
     for (int i = 10; i >= 0; i--)
     {
@@ -65,8 +101,6 @@ void app_main(void)
 
     	printf("%d:%d:%d %d-%d-%d\n", bcd2dec(buf[0]&0x7f), bcd2dec(buf[1]&0x7f), bcd2dec(buf[2]&0x3f), bcd2dec(buf[3]&0x3f), bcd2dec(buf[5]&0x1f), bcd2dec(buf[6]));
         vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-    printf("Restarting now.\n");
-    fflush(stdout);
-    esp_restart();
+    }*/
+
 }

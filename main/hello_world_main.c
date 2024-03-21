@@ -6,6 +6,8 @@
 #include "esp_spi_flash.h"
 #include "driver/i2c.h"
 #include "driver/ledc.h"
+#include "driver/gpio.h"
+
 
 typedef unsigned char u8;
 
@@ -41,18 +43,78 @@ void app_main(void)
 	ledc_channel_config(&ledc_channel);
 
 	vTaskDelay(1000 / portTICK_PERIOD_MS);
+	ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 4096);
+	ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+
+	//GPIO
+	gpio_config_t io_conf = {};
+	io_conf.intr_type = GPIO_INTR_DISABLE;
+	io_conf.mode = GPIO_MODE_OUTPUT;
+	//12-srclk, 15-ser, 17-rclk
+	io_conf.pin_bit_mask = (1<<12)|(1<<15)|(1<<17);
+	io_conf.pull_down_en = 0;
+	io_conf.pull_up_en = 0;
+	gpio_config(&io_conf);
 
 	while(true)
 	{
-		ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 6154);
-		ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 5000);
-		ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 1600);
-		ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+//		gpio_set_level(12, 0);
+//		gpio_set_level(15, 0);
+//		gpio_set_level(12, 1);
+//		gpio_set_level(15, 0);
+//
+//		gpio_set_level(12, 0);
+//		gpio_set_level(15, 0);
+//		gpio_set_level(12, 1);
+//		gpio_set_level(15, 0);
+//
+//		gpio_set_level(12, 0);
+//		gpio_set_level(15, 0);
+//		gpio_set_level(12, 1);
+//		gpio_set_level(15, 0);
+//
+//		gpio_set_level(12, 0);
+//		gpio_set_level(15, 0);
+//		gpio_set_level(12, 1);
+//		gpio_set_level(15, 0);
+//
+//		gpio_set_level(12, 0);
+//		gpio_set_level(15, 0);
+//		gpio_set_level(12, 1);
+//		gpio_set_level(15, 0);
+//
+//		gpio_set_level(12, 0);
+//		gpio_set_level(15, 0);
+//		gpio_set_level(12, 1);
+//		gpio_set_level(15, 0);
+//
+//		gpio_set_level(12, 0);
+//		gpio_set_level(15, 0);
+//		gpio_set_level(12, 1);
+//		gpio_set_level(15, 0);
+//
+//		gpio_set_level(12, 0);
+//		gpio_set_level(15, 1);
+//		gpio_set_level(12, 1);
+//		gpio_set_level(15, 0);
+//
+//
+//		gpio_set_level(12, 0);
+//		gpio_set_level(17, 1);
+//		vTaskDelay(10 / portTICK_PERIOD_MS);
+//		gpio_set_level(17, 0);
+
+		gpio_set_level(12, 1);
+		gpio_set_level(15, 1);
+		gpio_set_level(17, 1);
+
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+		gpio_set_level(17, 0);
+
+		vTaskDelay(500 / portTICK_PERIOD_MS);
 	}
 
 	/*//I2C and RTC

@@ -55,63 +55,135 @@ void app_main(void)
 	io_conf.pull_down_en = 0;
 	io_conf.pull_up_en = 0;
 	gpio_config(&io_conf);
+	gpio_set_level(12, 0);
+	gpio_set_level(15, 0);
+	gpio_set_level(17, 0);
 
 	while(true)
 	{
-//		gpio_set_level(12, 0);
-//		gpio_set_level(15, 0);
-//		gpio_set_level(12, 1);
-//		gpio_set_level(15, 0);
-//
-//		gpio_set_level(12, 0);
-//		gpio_set_level(15, 0);
-//		gpio_set_level(12, 1);
-//		gpio_set_level(15, 0);
-//
-//		gpio_set_level(12, 0);
-//		gpio_set_level(15, 0);
-//		gpio_set_level(12, 1);
-//		gpio_set_level(15, 0);
-//
-//		gpio_set_level(12, 0);
-//		gpio_set_level(15, 0);
-//		gpio_set_level(12, 1);
-//		gpio_set_level(15, 0);
-//
-//		gpio_set_level(12, 0);
-//		gpio_set_level(15, 0);
-//		gpio_set_level(12, 1);
-//		gpio_set_level(15, 0);
-//
-//		gpio_set_level(12, 0);
-//		gpio_set_level(15, 0);
-//		gpio_set_level(12, 1);
-//		gpio_set_level(15, 0);
-//
-//		gpio_set_level(12, 0);
-//		gpio_set_level(15, 0);
-//		gpio_set_level(12, 1);
-//		gpio_set_level(15, 0);
-//
-//		gpio_set_level(12, 0);
-//		gpio_set_level(15, 1);
-//		gpio_set_level(12, 1);
-//		gpio_set_level(15, 0);
-//
-//
-//		gpio_set_level(12, 0);
-//		gpio_set_level(17, 1);
-//		vTaskDelay(10 / portTICK_PERIOD_MS);
-//		gpio_set_level(17, 0);
-
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
 		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
 		gpio_set_level(15, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+
 		gpio_set_level(17, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(17, 0);
 
 		vTaskDelay(500 / portTICK_PERIOD_MS);
 
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
 		gpio_set_level(12, 0);
 		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+		gpio_set_level(15, 0);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+		gpio_set_level(12, 0);
+		gpio_set_level(15, 0);
+
+
+		gpio_set_level(17, 1);
+		vTaskDelay(10 / portTICK_PERIOD_MS);
 		gpio_set_level(17, 0);
 
 		vTaskDelay(500 / portTICK_PERIOD_MS);

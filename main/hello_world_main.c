@@ -9,7 +9,14 @@
 #include "driver/gpio.h"
 
 
+const int GPIO_SRCLK = 12;
+const int GPIO_SER = 15;
+const int GPIO_PWM = 16;
+const int GPIO_RCLK = 17;
+
 typedef unsigned char u8;
+
+u8 digitEncoded[] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f};
 
 u8 bcd2dec(u8 a)
 {
@@ -19,6 +26,32 @@ u8 bcd2dec(u8 a)
 u8 dec2bcd(u8 a)
 {
 	return ((a/10)<<4)|(a%10);
+}
+
+void sendBit(unsigned bit)
+{
+	gpio_set_level(GPIO_SER, bit);
+	vTaskDelay(10 / portTICK_PERIOD_MS);
+	gpio_set_level(GPIO_SRCLK, 1);
+	vTaskDelay(10 / portTICK_PERIOD_MS);
+	gpio_set_level(GPIO_SRCLK, 0);
+	gpio_set_level(GPIO_SER, 0);
+}
+
+void sendDigit(unsigned digit)
+{
+	if(digit>9)
+		return;
+
+	digit = digitEncoded[digit];
+	for(int i=7;i>=0;i--)
+	{
+		sendBit((digit>>i)&1);
+	}
+
+	gpio_set_level(GPIO_RCLK, 1);
+	vTaskDelay(10 / portTICK_PERIOD_MS);
+	gpio_set_level(GPIO_RCLK, 0);
 }
 
 void app_main(void)
@@ -37,7 +70,7 @@ void app_main(void)
 	ledc_channel.channel = LEDC_CHANNEL_0;
 	ledc_channel.timer_sel = LEDC_TIMER_0;
 	ledc_channel.intr_type =  LEDC_INTR_FADE_END;
-	ledc_channel.gpio_num = 16;
+	ledc_channel.gpio_num = GPIO_PWM;
 	ledc_channel.duty = 8192;
 	ledc_channel.hpoint = 0;
 	ledc_channel_config(&ledc_channel);
@@ -50,143 +83,21 @@ void app_main(void)
 	gpio_config_t io_conf = {};
 	io_conf.intr_type = GPIO_INTR_DISABLE;
 	io_conf.mode = GPIO_MODE_OUTPUT;
-	//12-srclk, 15-ser, 17-rclk
-	io_conf.pin_bit_mask = (1<<12)|(1<<15)|(1<<17);
+	io_conf.pin_bit_mask = (1<<GPIO_SRCLK)|(1<<GPIO_SER)|(1<<GPIO_RCLK);
 	io_conf.pull_down_en = 0;
 	io_conf.pull_up_en = 0;
 	gpio_config(&io_conf);
-	gpio_set_level(12, 0);
-	gpio_set_level(15, 0);
-	gpio_set_level(17, 0);
+	gpio_set_level(GPIO_SRCLK, 0);
+	gpio_set_level(GPIO_SER, 0);
+	gpio_set_level(GPIO_RCLK, 0);
 
 	while(true)
 	{
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-
-		gpio_set_level(17, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(17, 0);
-
-		vTaskDelay(500 / portTICK_PERIOD_MS);
-
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-		gpio_set_level(15, 0);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(12, 0);
-		gpio_set_level(15, 0);
-
-
-		gpio_set_level(17, 1);
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		gpio_set_level(17, 0);
-
-		vTaskDelay(500 / portTICK_PERIOD_MS);
+		for(int i=9;i>=0;i--)
+		{
+			sendDigit(i);
+			vTaskDelay(500 / portTICK_PERIOD_MS);
+		}
 	}
 
 	/*//I2C and RTC

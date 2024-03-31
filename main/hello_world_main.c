@@ -8,7 +8,6 @@
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 
-
 const int GPIO_SRCLK = 12;
 const int GPIO_SER = 15;
 const int GPIO_PWM = 16;
@@ -16,7 +15,7 @@ const int GPIO_RCLK = 17;
 
 typedef unsigned char u8;
 
-u8 digitEncoded[] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f};
+u8 digitEncoded[] = {0xe7, 0x42, 0xd5, 0xd6, 0x72, 0xb6, 0xb7, 0xc2, 0xf7, 0xf6};
 
 u8 bcd2dec(u8 a)
 {
@@ -38,15 +37,20 @@ void sendBit(unsigned bit)
 	gpio_set_level(GPIO_SER, 0);
 }
 
-void sendDigit(unsigned digit)
+void sendTime(u8* digits, u8 dots)
 {
-	if(digit>9)
-		return;
-
-	digit = digitEncoded[digit];
-	for(int i=7;i>=0;i--)
+	u8 digit;
+	for(int i=0;i<4;i++)
 	{
-		sendBit((digit>>i)&1);
+		digit = digitEncoded[digits[i]];
+		if(i==1 || i==2)
+		{
+			digit|=dots<<3;
+		}
+		for(int j=7;j>=0;j--)
+		{
+			sendBit((digit>>j)&1);
+		}
 	}
 
 	gpio_set_level(GPIO_RCLK, 1);
@@ -71,13 +75,9 @@ void app_main(void)
 	ledc_channel.timer_sel = LEDC_TIMER_0;
 	ledc_channel.intr_type =  LEDC_INTR_FADE_END;
 	ledc_channel.gpio_num = GPIO_PWM;
-	ledc_channel.duty = 8192;
+	ledc_channel.duty = 4096;
 	ledc_channel.hpoint = 0;
 	ledc_channel_config(&ledc_channel);
-
-	vTaskDelay(1000 / portTICK_PERIOD_MS);
-	ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 4096);
-	ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 
 	//GPIO
 	gpio_config_t io_conf = {};
@@ -91,13 +91,62 @@ void app_main(void)
 	gpio_set_level(GPIO_SER, 0);
 	gpio_set_level(GPIO_RCLK, 0);
 
+	//i2c
+	i2c_config_t conf={};
+	conf.mode = I2C_MODE_MASTER;
+	conf.sda_io_num = 13;
+	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+	conf.scl_io_num = 14;
+	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+	conf.master.clk_speed = 400000;
+	i2c_param_config(I2C_NUM_0, &conf);
+	i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+
+	u8 buf[7];
+//	buf[0]=dec2bcd(0);
+//	buf[1]=dec2bcd(33);
+//	buf[2]=dec2bcd(11);
+//	buf[3]=dec2bcd(31);
+//	buf[4]=dec2bcd(6); //weekday
+//	buf[5]=dec2bcd(3) | (1<<7); //month
+//	buf[6]=dec2bcd(24);
+//
+//    i2c_cmd_handle_t handle = i2c_cmd_link_create();
+//    i2c_master_start(handle);
+//    i2c_master_write_byte(handle, 0xa2, true);
+//    i2c_master_write_byte(handle, 0x02, true);
+//    i2c_master_write(handle, buf, 7, true);
+//    i2c_master_stop(handle);
+//    i2c_master_cmd_begin(I2C_NUM_0, handle, 1000/portTICK_PERIOD_MS);
+//    i2c_cmd_link_delete(handle);
+//
+//    vTaskDelay(500 / portTICK_PERIOD_MS);
+
+	u8 dots=0;
 	while(true)
 	{
-		for(int i=9;i>=0;i--)
-		{
-			sendDigit(i);
-			vTaskDelay(500 / portTICK_PERIOD_MS);
-		}
+		i2c_cmd_handle_t handle = i2c_cmd_link_create();
+		i2c_master_start(handle);
+		i2c_master_write_byte(handle, 0xa2, true);
+		i2c_master_write_byte(handle, 0x02, true);
+		i2c_master_start(handle);
+		i2c_master_write_byte(handle, 0xa3, true);
+		i2c_master_read(handle, buf, 7, I2C_MASTER_LAST_NACK);
+		i2c_master_stop(handle);
+		i2c_master_cmd_begin(I2C_NUM_0, handle, 1000/portTICK_PERIOD_MS);
+		i2c_cmd_link_delete(handle);
+
+		u8 tmp=bcd2dec(buf[1]&0x7f);
+		buf[0]=tmp%10;
+		buf[1]=tmp/10;
+		tmp=bcd2dec(buf[2]&0x3f);
+		buf[2]=tmp%10;
+		buf[3]=tmp/10;
+
+		sendTime(buf, dots);
+
+		dots=dots^1;
+		vTaskDelay(500 / portTICK_PERIOD_MS);
 	}
 
 	/*//I2C and RTC

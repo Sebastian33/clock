@@ -30,9 +30,9 @@ u8 dec2bcd(u8 a)
 void sendBit(unsigned bit)
 {
 	gpio_set_level(GPIO_SER, bit);
-	vTaskDelay(10 / portTICK_PERIOD_MS);
+	//vTaskDelay(10 / portTICK_PERIOD_MS);
 	gpio_set_level(GPIO_SRCLK, 1);
-	vTaskDelay(10 / portTICK_PERIOD_MS);
+	//vTaskDelay(10 / portTICK_PERIOD_MS);
 	gpio_set_level(GPIO_SRCLK, 0);
 	gpio_set_level(GPIO_SER, 0);
 }
@@ -54,7 +54,7 @@ void sendTime(u8* digits, u8 dots)
 	}
 
 	gpio_set_level(GPIO_RCLK, 1);
-	vTaskDelay(10 / portTICK_PERIOD_MS);
+	//vTaskDelay(10 / portTICK_PERIOD_MS);
 	gpio_set_level(GPIO_RCLK, 0);
 }
 

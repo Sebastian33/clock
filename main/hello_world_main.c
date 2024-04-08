@@ -1,31 +1,26 @@
+#include <RTCDriver.hpp>
 #include <stdio.h>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
-#include "driver/i2c.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
+#include <time.h>
 
-const int GPIO_SRCLK = 12;
-const int GPIO_SER = 15;
-const int GPIO_PWM = 16;
-const int GPIO_RCLK = 17;
+const gpio_num_t GPIO_SRCLK = GPIO_NUM_12;
+const gpio_num_t GPIO_SER = GPIO_NUM_15;
+const gpio_num_t GPIO_PWM = GPIO_NUM_16;
+const gpio_num_t GPIO_RCLK = GPIO_NUM_17;
+
+extern void app_main();
 
 typedef unsigned char u8;
 
 u8 digitEncoded[] = {0xe7, 0x42, 0xd5, 0xd6, 0x72, 0xb6, 0xb7, 0xc2, 0xf7, 0xf6};
 
-u8 bcd2dec(u8 a)
-{
-	return (a&0xf)+10*(a>>4);
-}
 
-u8 dec2bcd(u8 a)
-{
-	return ((a/10)<<4)|(a%10);
-}
 
 void sendBit(unsigned bit)
 {
@@ -84,23 +79,16 @@ void app_main(void)
 	io_conf.intr_type = GPIO_INTR_DISABLE;
 	io_conf.mode = GPIO_MODE_OUTPUT;
 	io_conf.pin_bit_mask = (1<<GPIO_SRCLK)|(1<<GPIO_SER)|(1<<GPIO_RCLK);
-	io_conf.pull_down_en = 0;
-	io_conf.pull_up_en = 0;
+	io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+	io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
 	gpio_config(&io_conf);
 	gpio_set_level(GPIO_SRCLK, 0);
 	gpio_set_level(GPIO_SER, 0);
 	gpio_set_level(GPIO_RCLK, 0);
 
 	//i2c
-	i2c_config_t conf={};
-	conf.mode = I2C_MODE_MASTER;
-	conf.sda_io_num = 13;
-	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-	conf.scl_io_num = 14;
-	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-	conf.master.clk_speed = 400000;
-	i2c_param_config(I2C_NUM_0, &conf);
-	i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+	RTCDriver rtc;
+	rtc.Init();
 
 	u8 buf[7];
 //	buf[0]=dec2bcd(0);
@@ -125,23 +113,23 @@ void app_main(void)
 	u8 dots=0;
 	while(true)
 	{
-		i2c_cmd_handle_t handle = i2c_cmd_link_create();
-		i2c_master_start(handle);
-		i2c_master_write_byte(handle, 0xa2, true);
-		i2c_master_write_byte(handle, 0x02, true);
-		i2c_master_start(handle);
-		i2c_master_write_byte(handle, 0xa3, true);
-		i2c_master_read(handle, buf, 7, I2C_MASTER_LAST_NACK);
-		i2c_master_stop(handle);
-		i2c_master_cmd_begin(I2C_NUM_0, handle, 1000/portTICK_PERIOD_MS);
-		i2c_cmd_link_delete(handle);
+//		i2c_cmd_handle_t handle = i2c_cmd_link_create();
+//		i2c_master_start(handle);
+//		i2c_master_write_byte(handle, 0xa2, true);
+//		i2c_master_write_byte(handle, 0x02, true);
+//		i2c_master_start(handle);
+//		i2c_master_write_byte(handle, 0xa3, true);
+//		i2c_master_read(handle, buf, 7, I2C_MASTER_LAST_NACK);
+//		i2c_master_stop(handle);
+//		i2c_master_cmd_begin(I2C_NUM_0, handle, 1000/portTICK_PERIOD_MS);
+//		i2c_cmd_link_delete(handle);
+//
 
-		u8 tmp=bcd2dec(buf[1]&0x7f);
-		buf[0]=tmp%10;
-		buf[1]=tmp/10;
-		tmp=bcd2dec(buf[2]&0x3f);
-		buf[2]=tmp%10;
-		buf[3]=tmp/10;
+		tm dt = rtc.ReadDateTime();
+		buf[0]=dt.tm_min%10;
+		buf[1]=dt.tm_min/10;
+		buf[2]=dt.tm_hour%10;
+		buf[3]=dt.tm_hour/10;
 
 		sendTime(buf, dots);
 

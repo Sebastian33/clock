@@ -1,21 +1,20 @@
+#include "config.hpp"
+
 #include <stdio.h>
-#include "sdkconfig.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include <time.h>
+
 #include "Drivers/RTCDriver.hpp"
+#include "Tasks/TaskNet.hpp"
 
 const gpio_num_t GPIO_SRCLK = GPIO_NUM_12;
 const gpio_num_t GPIO_SER = GPIO_NUM_15;
 const gpio_num_t GPIO_PWM = GPIO_NUM_16;
 const gpio_num_t GPIO_RCLK = GPIO_NUM_17;
 
-typedef unsigned char u8;
 
 u8 digitEncoded[] = {0xe7, 0x42, 0xd5, 0xd6, 0x72, 0xb6, 0xb7, 0xc2, 0xf7, 0xf6};
 
@@ -91,6 +90,9 @@ extern "C" void app_main(void)
 	rtc.Init();
 
 	EventGroupHandle_t eventGroup = xEventGroupCreate();
+
+	TaskNet taskNet;
+	taskNet.Init(&eventGroup);
 
 	u8 dots=0;
 	u8 buf[4];

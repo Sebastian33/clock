@@ -2,7 +2,7 @@
 #include <string.h>
 
 const char AP_SSID[] = "clock";
-const char AP_PASSWORD[] = "123";
+const char AP_PASSWORD[] = "12345678";
 
 void TaskNet::Init(EventGroupHandle_t* eventGroup)
 {

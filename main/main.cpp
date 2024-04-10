@@ -6,6 +6,7 @@
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include <time.h>
+#include "nvs_flash.h"
 
 #include "Drivers/RTCDriver.hpp"
 #include "Tasks/TaskNet.hpp"
@@ -83,6 +84,23 @@ void sendTime(u8* digits, u8 dots)
 
 extern "C" void app_main(void)
 {
+	esp_err_t espResult = nvs_flash_init();
+	if(espResult == ESP_ERR_NVS_NO_FREE_PAGES || espResult == ESP_ERR_NVS_NEW_VERSION_FOUND)
+	{
+		espResult = nvs_flash_erase();
+		if(espResult != ESP_OK)
+		{
+			return;
+		}
+
+		espResult = nvs_flash_init();
+		if(espResult != ESP_OK)
+		{
+			return;
+		}
+
+	}
+
 	InitPwm();
 	InitOutput();
 

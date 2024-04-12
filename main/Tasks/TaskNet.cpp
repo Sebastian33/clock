@@ -1,11 +1,21 @@
 #include "TaskNet.hpp"
 #include <string.h>
 
+#include "esp_log.h"
+
 const char AP_SSID[] = "clock";
 const char AP_PASSWORD[] = "12345678";
 
+TaskNet* taskNet = nullptr;
+
+const u8* getIndexPageStart();
+const u8* getIndexPageEnd();
+
+
 void TaskNet::Init(EventGroupHandle_t* eventGroup)
 {
+	taskNet = this;
+
 	ESP_ERROR_CHECK(esp_netif_init());
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	accessPointIF = esp_netif_create_default_wifi_ap();
@@ -19,7 +29,7 @@ void TaskNet::Init(EventGroupHandle_t* eventGroup)
 	ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
 										ESP_EVENT_ANY_ID,
 										&wifiEventHandler,
-										nullptr,
+										&server,
 										&wifiEvents));
 
 
@@ -54,5 +64,67 @@ void TaskNet::Init(EventGroupHandle_t* eventGroup)
 
 void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
+	if (event_id == WIFI_EVENT_AP_START)
+	{
+	   	TaskNet::startWebServer((httpd_handle_t*)arg);
+	   	ESP_LOGI("NET", "starterd");
+	}
+	else if (event_id == WIFI_EVENT_AP_STOP)
+	{
+		TaskNet::stopWebServer((httpd_handle_t*)arg);
+	}
+	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
+	{
+		//esp_wifi_connect();
+	}
+	else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED)
+	{
+	}
+	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
+	{
+	}
+	else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
+	{
+	}
+	else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_START)
+	{
+	}
+}
 
+static const httpd_uri_t indexGetD = {
+	"/",
+	HTTP_GET,
+	TaskNet::indexGet,
+	nullptr
+};
+
+esp_err_t TaskNet::indexGet(httpd_req_t* req)
+{
+	ESP_LOGI("NET", "index get");
+	httpd_resp_send(req, (char *)getIndexPageStart(), getIndexPageEnd()-getIndexPageStart());
+	return ESP_OK;
+}
+
+void TaskNet::startWebServer(httpd_handle_t* server)
+{
+	if (*server != nullptr)
+	{
+		return;
+	}
+
+	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+	config.lru_purge_enable = true;
+	if(httpd_start(server, &config) == ESP_OK)
+	{
+	   	httpd_register_uri_handler(*server, &indexGetD);
+	}
+}
+
+void TaskNet::stopWebServer(httpd_handle_t* server)
+{
+	if(*server != nullptr)
+	{
+		httpd_stop(*server);
+		*server = nullptr;
+	}
 }

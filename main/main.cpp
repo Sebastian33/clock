@@ -19,6 +19,18 @@ const gpio_num_t GPIO_RCLK = GPIO_NUM_17;
 
 u8 digitEncoded[] = {0xe7, 0x42, 0xd5, 0xd6, 0x72, 0xb6, 0xb7, 0xc2, 0xf7, 0xf6};
 
+extern const u8 index_page_start[] asm("_binary_index_html_start");
+extern const u8 index_page_end[]   asm("_binary_index_html_end");
+const u8* getIndexPageStart()
+{
+	return index_page_start;
+}
+const u8* getIndexPageEnd()
+{
+	return index_page_end;
+}
+
+
 void InitPwm()
 {
 	ledc_timer_config_t timer;

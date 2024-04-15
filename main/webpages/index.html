@@ -4,29 +4,20 @@
 </head>
 <body>
 <h2>Set Time</h2>
-<form name="DateTime" action="/" method="post">
-  <label for="year">Year: </label>
-  <input type="text" id="year" name="year">
-  <label for="month">Month: </label>
-  <input type="text" id="month" name="month">
-  <label for="day">Day: </label>
-  <input type="text" id="day" name="day"><br>
+<form name="DateTimeForm" action="/datetime" method="post">
+  <input type="datetime-local" id="dt" name="dt">
   <br>
-  <label for="hour">Hour: </label>
-  <input type="text" id="hour" name="hour">
-  <label for="minute">Minute:</label>
-  <input type="text" id="minute" name="minute"><br>
   <br>
-  <input type="button" onclick="submitTime()" value="Submit">
+  <input type="submit" value="Set date and time">
+  <!--input type="button" value="submit" onclick="postDT()"-->
 </form>
 
 </body>
 </html>
 
 <script>
-	function submitTime()
+	function postDT()
 	{
-		let a=DateTime.year.value;
-		alert(a)
+		DateTimeForm.submit();
 	}
 </script>

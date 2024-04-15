@@ -3,8 +3,10 @@
 
 #include "esp_log.h"
 
-const char AP_SSID[] = "clock";
-const char AP_PASSWORD[] = "12345678";
+const char AP_SSID[] = "Chrenometer";
+const char AP_PASSWORD[] = "elpsykongroo";
+
+const char DATETIME_KEY[] = "dt";
 
 TaskNet* taskNet = nullptr;
 
@@ -62,12 +64,16 @@ void TaskNet::Init(EventGroupHandle_t* eventGroup)
 	ESP_ERROR_CHECK(esp_wifi_start());
 }
 
+void TaskNet::SetTime(struct tm& dt)
+{
+	dateTime = dt;
+}
+
 void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
 	if (event_id == WIFI_EVENT_AP_START)
 	{
 	   	TaskNet::startWebServer((httpd_handle_t*)arg);
-	   	ESP_LOGI("NET", "starterd");
 	}
 	else if (event_id == WIFI_EVENT_AP_STOP)
 	{
@@ -91,17 +97,96 @@ void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t e
 	}
 }
 
+void decodeURL(char* str)
+{
+	int i=0;
+	int offset=0;
+	u8 l, h;
+	while(str[i+offset]!='\0')
+	{
+		if(str[i+offset]=='%')
+		{
+			h=str[i+offset+1];
+			h = h>='A' && h<='F' ? h-'A'+10 : (h>='a' && h<='f' ? h-'a'+10 : h-'0');
+			l=str[i+offset+2];
+			l = l>='A' && l<='F' ? l-'A'+10 : (l>='a' && l<='f' ? l-'a'+10 : l-'0');
+			str[i] = (h<<4) | l;
+			offset+=2;
+		}
+		else if(str[i+offset]=='+')
+		{
+			str[i]=' ';
+		}
+		else
+		{
+			str[i]=str[i+offset];
+		}
+		i++;
+	}
+	str[i]='\0';
+}
+
 static const httpd_uri_t indexGetD = {
 	"/",
 	HTTP_GET,
-	TaskNet::indexGet,
+	TaskNet::IndexGet,
 	nullptr
 };
 
-esp_err_t TaskNet::indexGet(httpd_req_t* req)
+esp_err_t TaskNet::IndexGet(httpd_req_t* req)
 {
-	ESP_LOGI("NET", "index get");
 	httpd_resp_send(req, (char *)getIndexPageStart(), getIndexPageEnd()-getIndexPageStart());
+	return ESP_OK;
+}
+
+static const httpd_uri_t dateTimePostD = {
+	"/datetime",
+	HTTP_POST,
+	TaskNet::DateTimePost,
+	nullptr
+};
+
+esp_err_t TaskNet::DateTimePost(httpd_req_t* req)
+{
+	char request[64];
+	if(req->content_len>64)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Very long data");
+		return ESP_FAIL;
+	}
+	int ret = httpd_req_recv(req, request, req->content_len);
+	if (ret<=0)
+	{
+		if(ret == HTTPD_SOCK_ERR_TIMEOUT)
+		{
+			httpd_resp_send_408(req);
+		}
+		return ESP_FAIL;
+	}
+
+	request[req->content_len] = '\0';
+	decodeURL(request);
+	if(strstr(request, DATETIME_KEY) == nullptr)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Data is missing");
+		return ESP_FAIL;
+	}
+
+	struct tm dt;
+	char* begin = request+1+strlen(DATETIME_KEY);
+	dt.tm_year = atoi(begin);
+	begin = strchr(begin, '-')+1;
+	dt.tm_mon = atoi(begin);
+	begin = strchr(begin, '-')+1;
+	dt.tm_mday = atoi(begin);
+	begin = strchr(begin, 'T')+1;
+	dt.tm_hour = atoi(begin);
+	begin = strchr(begin, ':')+1;
+	dt.tm_min = atoi(begin);
+	dt.tm_sec = 0;
+	taskNet->SetTime(dt);
+
+	httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
 	return ESP_OK;
 }
 
@@ -117,6 +202,7 @@ void TaskNet::startWebServer(httpd_handle_t* server)
 	if(httpd_start(server, &config) == ESP_OK)
 	{
 	   	httpd_register_uri_handler(*server, &indexGetD);
+	   	httpd_register_uri_handler(*server, &dateTimePostD);
 	}
 }
 

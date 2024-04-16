@@ -3,14 +3,25 @@
 <title>Configuration</title>
 </head>
 <body>
+
 <h2>Set Time</h2>
 <form name="DateTimeForm" action="/datetime" method="post">
-  <input type="datetime-local" id="dt" name="dt">
+  <input type="datetime-local" id="dt" name="dt" required>
   <br>
   <br>
   <input type="submit" value="Set date and time">
   <!--input type="button" value="submit" onclick="postDT()"-->
 </form>
+
+<h2>Set Wifi credentials</h2>
+<form name="WifiForm" action="/wifi" method="post">
+  <label for="ssid">SSID:</label><br>
+  <input type="text" name="ssid" required><br>
+  <label for="passwd">Password:</label><br>
+  <input type="text" name="passwd">
+  <br>
+  <br>
+  <input type="submit" value="Set Wifi Credentials">
 
 </body>
 </html>
@@ -18,6 +29,6 @@
 <script>
 	function postDT()
 	{
-		DateTimeForm.submit();
+		DateTime.submit();
 	}
 </script>

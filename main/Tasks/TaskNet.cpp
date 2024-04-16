@@ -7,6 +7,8 @@ const char AP_SSID[] = "Chrenometer";
 const char AP_PASSWORD[] = "elpsykongroo";
 
 const char DATETIME_KEY[] = "dt";
+const char SSID_KEY[] = "ssid";
+const char PASSWORD_KEY[] = "passwd";
 
 TaskNet* taskNet = nullptr;
 
@@ -16,6 +18,8 @@ const u8* getIndexPageEnd();
 
 void TaskNet::Init(EventGroupHandle_t* eventGroup)
 {
+	mainEventGroup = eventGroup;
+
 	taskNet = this;
 
 	ESP_ERROR_CHECK(esp_netif_init());
@@ -67,6 +71,16 @@ void TaskNet::Init(EventGroupHandle_t* eventGroup)
 void TaskNet::SetTime(struct tm& dt)
 {
 	dateTime = dt;
+}
+
+tm TaskNet::GetTime()
+{
+	return dateTime;
+}
+
+void TaskNet::SetMainEvent(unsigned event)
+{
+	xEventGroupSetBits(mainEventGroup, event);
 }
 
 void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -172,7 +186,7 @@ esp_err_t TaskNet::DateTimePost(httpd_req_t* req)
 		return ESP_FAIL;
 	}
 
-	struct tm dt;
+	tm dt;
 	char* begin = request+1+strlen(DATETIME_KEY);
 	dt.tm_year = atoi(begin);
 	begin = strchr(begin, '-')+1;
@@ -185,6 +199,54 @@ esp_err_t TaskNet::DateTimePost(httpd_req_t* req)
 	dt.tm_min = atoi(begin);
 	dt.tm_sec = 0;
 	taskNet->SetTime(dt);
+
+	taskNet->SetMainEvent(MAIN_SET_TIME);
+
+	httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
+	return ESP_OK;
+}
+
+static const httpd_uri_t wifiCredPostD = {
+	"/wifi",
+	HTTP_POST,
+	TaskNet::WifiCredPost,
+	nullptr
+};
+
+esp_err_t TaskNet::WifiCredPost(httpd_req_t* req)
+{
+	char request[128];
+	if(req->content_len>128)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Very long data");
+		return ESP_FAIL;
+	}
+	int ret = httpd_req_recv(req, request, req->content_len);
+	if (ret<=0)
+	{
+		if(ret == HTTPD_SOCK_ERR_TIMEOUT)
+		{
+			httpd_resp_send_408(req);
+		}
+		return ESP_FAIL;
+	}
+
+	request[req->content_len] = '\0';
+	decodeURL(request);
+	if(strstr(request, SSID_KEY) == nullptr ||
+		strstr(request, PASSWORD_KEY) == nullptr)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Data is missing");
+		return ESP_FAIL;
+	}
+
+	char* ssid = request+1+strlen(SSID_KEY);
+	char* passwd = strchr(ssid, '&');
+	*passwd = '\0';
+	passwd += 1+strlen(PASSWORD_KEY)+1;
+	taskNet->SetWifiCredentials(ssid, passwd);
+
+	taskNet->SetMainEvent(MAIN_WRITE_WIFI_CRED);
 
 	httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
 	return ESP_OK;
@@ -203,6 +265,7 @@ void TaskNet::startWebServer(httpd_handle_t* server)
 	{
 	   	httpd_register_uri_handler(*server, &indexGetD);
 	   	httpd_register_uri_handler(*server, &dateTimePostD);
+	   	httpd_register_uri_handler(*server, &wifiCredPostD);
 	}
 }
 

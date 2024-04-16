@@ -112,6 +112,7 @@ extern "C" void app_main(void)
 		}
 
 	}
+	TaskNet taskNet;
 
 	InitPwm();
 	InitOutput();
@@ -121,24 +122,40 @@ extern "C" void app_main(void)
 
 	EventGroupHandle_t eventGroup = xEventGroupCreate();
 
-	TaskNet taskNet;
 	taskNet.Init(&eventGroup);
 
 	u8 dots=0;
 	u8 buf[4];
+	unsigned bits;
+	tm dt;
 	while(true)
 	{
-		//if(xEventGroupWaitBits(eventGroup, 0, true, false, 500/ portTICK_PERIOD_MS))
+		bits = xEventGroupWaitBits(eventGroup,
+				MAIN_SET_TIME,
+				true, false, 500 / portTICK_PERIOD_MS);
+		if(bits == 0)
+		{
+			dt = rtc.ReadDateTime();
+			buf[0]=dt.tm_min%10;
+			buf[1]=dt.tm_min/10;
+			buf[2]=dt.tm_hour%10;
+			buf[3]=dt.tm_hour/10;
 
-		tm dt = rtc.ReadDateTime();
-		buf[0]=dt.tm_min%10;
-		buf[1]=dt.tm_min/10;
-		buf[2]=dt.tm_hour%10;
-		buf[3]=dt.tm_hour/10;
+			sendTime(buf, dots);
 
-		sendTime(buf, dots);
+			dots=dots^1;
+			//vTaskDelay(500 / portTICK_PERIOD_MS);
+			continue;
+		}
 
-		dots=dots^1;
-		vTaskDelay(500 / portTICK_PERIOD_MS);
+		if((bits & MAIN_SET_TIME) != 0)
+		{
+			dt = taskNet.GetTime();
+			rtc.WriteDateTime(dt);
+		}
+		if((bits & MAIN_WRITE_WIFI_CRED) != 0)
+		{
+
+		}
 	}
 }

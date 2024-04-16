@@ -12,7 +12,11 @@ class TaskNet
 {
 public:
 	void Init(EventGroupHandle_t* eventGroup);
-	void SetTime(struct tm& dt);
+	void SetTime(tm& dt);
+	tm GetTime();
+	void SetWifiCredentials(char* ssid, char* password);
+	void GetWifiCredentials(char* ssid, char* password);
+	void SetMainEvent(unsigned event);
 
 	static void startWebServer(httpd_handle_t* server);
 	static void stopWebServer(httpd_handle_t* server);
@@ -21,14 +25,19 @@ public:
 
 	static esp_err_t IndexGet(httpd_req_t* req);
 	static esp_err_t DateTimePost(httpd_req_t* req);
+	static esp_err_t WifiCredPost(httpd_req_t* req);
 
 private:
+	EventGroupHandle_t* mainEventGroup;
+
 	esp_netif_t* accessPointIF;
 	esp_netif_t* stationIF;
 
 	httpd_handle_t server = nullptr;
 
-	struct tm dateTime;
+	tm dateTime;
+	char ssid[SSID_SIZE];
+	char password[PASSWORD_SIZE];
 };
 
 

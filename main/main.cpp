@@ -6,10 +6,12 @@
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include <time.h>
-#include "nvs_flash.h"
 
 #include "Drivers/RTCDriver.hpp"
+#include "Drivers/Eeprom.hpp"
 #include "Tasks/TaskNet.hpp"
+
+#include "esp_log.h"
 
 const gpio_num_t GPIO_SRCLK = GPIO_NUM_12;
 const gpio_num_t GPIO_SER = GPIO_NUM_15;
@@ -29,7 +31,6 @@ const u8* getIndexPageEnd()
 {
 	return index_page_end;
 }
-
 
 void InitPwm()
 {
@@ -96,27 +97,14 @@ void sendTime(u8* digits, u8 dots)
 
 extern "C" void app_main(void)
 {
-	esp_err_t espResult = nvs_flash_init();
-	if(espResult == ESP_ERR_NVS_NO_FREE_PAGES || espResult == ESP_ERR_NVS_NEW_VERSION_FOUND)
-	{
-		espResult = nvs_flash_erase();
-		if(espResult != ESP_OK)
-		{
-			return;
-		}
+	Eeprom eeprom;
+	eeprom.Init();
 
-		espResult = nvs_flash_init();
-		if(espResult != ESP_OK)
-		{
-			return;
-		}
-
-	}
 	TaskNet taskNet;
+	eeprom.ReadWifiCredentials(taskNet.GetPointerSsid(),taskNet.GetPointerPassword());
 
 	InitPwm();
 	InitOutput();
-
 	RTCDriver rtc;
 	rtc.Init();
 
@@ -131,7 +119,8 @@ extern "C" void app_main(void)
 	while(true)
 	{
 		bits = xEventGroupWaitBits(eventGroup,
-				MAIN_SET_TIME,
+				MAIN_SET_TIME|
+				MAIN_WRITE_WIFI_CRED,
 				true, false, 500 / portTICK_PERIOD_MS);
 		if(bits == 0)
 		{
@@ -155,7 +144,7 @@ extern "C" void app_main(void)
 		}
 		if((bits & MAIN_WRITE_WIFI_CRED) != 0)
 		{
-
+			eeprom.WriteWifiCredentials(taskNet.GetPointerSsid(), taskNet.GetPointerPassword());
 		}
 	}
 }

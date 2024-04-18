@@ -1,5 +1,6 @@
 #include "TaskNet.hpp"
 #include <string.h>
+#include "esp_attr.h"
 
 #include "esp_log.h"
 
@@ -54,8 +55,8 @@ void TaskNet::Init(EventGroupHandle_t* eventGroup)
 	APConfig.ap.max_connection = 4;
 
 	wifi_config_t SConfig = {};
-	strcpy((char*)SConfig.sta.ssid, "");
-	strcpy((char*)SConfig.sta.password, "");
+	strcpy((char*)SConfig.sta.ssid, ssid);
+	strcpy((char*)SConfig.sta.password, password);
 	SConfig.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 	SConfig.sta.pmf_cfg = {
 		true,
@@ -78,9 +79,19 @@ tm TaskNet::GetTime()
 	return dateTime;
 }
 
+char* TaskNet::GetPointerSsid()
+{
+	return ssid;
+}
+
+char* TaskNet::GetPointerPassword()
+{
+	return password;
+}
+
 void TaskNet::SetMainEvent(unsigned event)
 {
-	xEventGroupSetBits(mainEventGroup, event);
+	xEventGroupSetBits(*mainEventGroup, event);
 }
 
 void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -162,6 +173,7 @@ static const httpd_uri_t dateTimePostD = {
 
 esp_err_t TaskNet::DateTimePost(httpd_req_t* req)
 {
+	ESP_LOGI("NET", "datetime");
 	char request[64];
 	if(req->content_len>64)
 	{
@@ -244,7 +256,8 @@ esp_err_t TaskNet::WifiCredPost(httpd_req_t* req)
 	char* passwd = strchr(ssid, '&');
 	*passwd = '\0';
 	passwd += 1+strlen(PASSWORD_KEY)+1;
-	taskNet->SetWifiCredentials(ssid, passwd);
+	strcpy(taskNet->GetPointerSsid(), ssid);
+	strcpy(taskNet->GetPointerPassword(), passwd);
 
 	taskNet->SetMainEvent(MAIN_WRITE_WIFI_CRED);
 

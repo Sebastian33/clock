@@ -14,8 +14,8 @@ public:
 	void Init(EventGroupHandle_t* eventGroup);
 	void SetTime(tm& dt);
 	tm GetTime();
-	void SetWifiCredentials(char* ssid, char* password);
-	void GetWifiCredentials(char* ssid, char* password);
+	char* GetPointerSsid();
+	char* GetPointerPassword();
 	void SetMainEvent(unsigned event);
 
 	static void startWebServer(httpd_handle_t* server);

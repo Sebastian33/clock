@@ -23,16 +23,19 @@ def sec2date(s):
     leap-=years//100
     leap+=years//400
 
+    if (years%400==0) or (years%4==0 and years%100!=0):
+        leap-=1
+
     while days<leap:
-        leap-=days
         years-=1
-        days=364
+        days+=365
         if (years%400==0) or (years%4==0 and years%100!=0):
             days+=1
-
+        
     days=days-leap+1
     years+=years0
-    print(years, days, hours, minutes, seconds)
+    #print(years, days, hours, minutes, seconds)
+    return (years, days, hours, minutes, seconds)
 
 def sec2date2(s):
     years=1900
@@ -48,10 +51,13 @@ def sec2date2(s):
         d=365
         if (years%400==0) or (years%4==0 and years%100!=0):
             d+=1
-        if s>d:
-            s-=d:
+        if s>=d:
+            s-=d
         else:
             break
         years+=1
 
-    print(years, s, hours, minutes, seconds)
+    s+=1
+    #print(years, s, hours, minutes, seconds)
+    return (years, s, hours, minutes, seconds)
+

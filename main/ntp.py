@@ -25,7 +25,7 @@ def sec2date(s):
     leap-=years//100
     leap+=years//400
 
-    if (years%400==0) or (years%4==0 and years%100!=0):
+    if leap!=0 and ((years%400==0) or (years%4==0 and years%100!=0)):
         leap-=1
 
     while days<leap:
@@ -44,10 +44,12 @@ def sec2date(s):
             if days>1:
                 days-=1
             else:
-                days=DAYS_IN_MONTH[0]
+                days=29
+                month=1
                 break
         month+=1
-    
+        
+    month+=1
     return (years, month, days, hours, minutes, seconds)
 
 def sec2date2(s):
@@ -94,5 +96,28 @@ def date2sec(years, months, days, hours, minutes, seconds):
     days+=years*365+leap-1
     seconds+=days*3600*24
     return seconds
-    
 
+def test():
+    year=1900
+    month=1
+    day=1
+
+    while year<2500:
+        print(year, month, day)
+        s=date2sec(year, month, day, 0, 0, 0)
+        date=sec2date(s)
+        if date[0]!=year or date[1]!=month or date[2]!=day or date[3]!=0 or date[4]!=0 or date[5]!=0:
+            print("nope")
+            return
+
+        day+=1
+        if month==2 and day==29 and ((year%400==0) or (year%4==0 and year%100!=0)):
+            continue
+        elif DAYS_IN_MONTH[month-1]<day:
+            day=1
+            month+=1
+
+        if month>12:
+            month=1
+            year+=1
+    print("done")

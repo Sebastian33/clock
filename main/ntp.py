@@ -1,3 +1,6 @@
+import socket
+import time
+
 CENTURY = 3155673600
 DAYS_IN_MONTH = [31,28,31,30,31,30,31,31,30,31,30,31]
 LEAP_BEFORE_1900 = 460
@@ -121,3 +124,28 @@ def test():
             month=1
             year+=1
     print("done")
+
+def ntpRequest():
+    client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    client.settimeout(5.0)
+    addr=('time.google.com',123)
+
+    li=0
+    vn=4
+    mode=3
+    message=(li|(vn<<2)|(mode<<4)).to_bytes(1,'big')
+    message+=(16).to_bytes(1,'big')
+    message+=(10).to_bytes(1,'big')
+    message+=(0).to_bytes(1,'big')
+    message+=bytes(8)
+    message+=b'REFR'
+    message+=date2sec(2024, 4, 24, 9, 37, 9).to_bytes(4, 'big')+bytes(4)
+    dt=time.localtime()
+    message+=date2sec(dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec).to_bytes(4, 'big')+bytes(4)
+    message+=bytes(16)
+
+    print(message)
+    
+    client.sendto(message, addr)
+    rsp = client.recvfrom(1024)
+    print(rsp[0])

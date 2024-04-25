@@ -128,24 +128,33 @@ def test():
 def ntpRequest():
     client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client.settimeout(5.0)
-    addr=('time.google.com',123)
+    #addr=('time.google.com',123)
+    addr=('time.windows.com',123)
 
     li=0
     vn=4
     mode=3
-    message=(li|(vn<<2)|(mode<<4)).to_bytes(1,'big')
+    message=((li<<5)|(vn<<3)|mode).to_bytes(1,'big')
     message+=(16).to_bytes(1,'big')
     message+=(10).to_bytes(1,'big')
     message+=(0).to_bytes(1,'big')
     message+=bytes(8)
     message+=b'REFR'
-    message+=date2sec(2024, 4, 24, 9, 37, 9).to_bytes(4, 'big')+bytes(4)
+    message+=date2sec(2024, 4, 25, 11, 37, 2).to_bytes(4, 'big')+bytes(4)
     dt=time.localtime()
+    print(dt)
     message+=date2sec(dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec).to_bytes(4, 'big')+bytes(4)
     message+=bytes(16)
 
-    print(message)
+    #print(message)
     
     client.sendto(message, addr)
     rsp = client.recvfrom(1024)
-    print(rsp[0])
+    rsp=rsp[0]
+    print(rsp)
+    #receive ts
+    #s=rsp[35]+(rsp[34]<<8)+(rsp[33]<<16)+(rsp[32]<<24)
+    #print(sec2date(s))
+    #transmit ts
+    s=rsp[43]+(rsp[42]<<8)+(rsp[41]<<16)+(rsp[40]<<24)
+    print(sec2date(s))

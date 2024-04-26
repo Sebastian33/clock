@@ -17,6 +17,7 @@ public:
 	char* GetPointerSsid();
 	char* GetPointerPassword();
 	void SetMainEvent(unsigned event);
+	void NtpSync();
 
 	static void startWebServer(httpd_handle_t* server);
 	static void stopWebServer(httpd_handle_t* server);
@@ -26,6 +27,7 @@ public:
 	static esp_err_t IndexGet(httpd_req_t* req);
 	static esp_err_t DateTimePost(httpd_req_t* req);
 	static esp_err_t WifiCredPost(httpd_req_t* req);
+	static esp_err_t SyncNowGet(httpd_req_t* req);
 
 private:
 	EventGroupHandle_t* mainEventGroup;

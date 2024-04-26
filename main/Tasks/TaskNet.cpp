@@ -1,6 +1,9 @@
 #include "TaskNet.hpp"
 #include <string.h>
-#include "esp_attr.h"
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "netdb.h"
 
 #include "esp_log.h"
 
@@ -94,6 +97,19 @@ void TaskNet::SetMainEvent(unsigned event)
 	xEventGroupSetBits(*mainEventGroup, event);
 }
 
+void TaskNet::NtpSync()
+{
+	hostent* info = gethostbyname("time.google.com");
+	if(info->h_addr_list==nullptr)
+	{
+		return;
+	}
+	sockaddr_in addr;
+	addr.sin_addr.s_addr = info->h_addr_list[0][0]|(info->h_addr_list[0][1]<<8)|(info->h_addr_list[0][2]<<16)|(info->h_addr_list[0][3]<<24);
+	addr.sin_family = AF_INET;
+	addr.sin_port = 123;
+}
+
 void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
 	if (event_id == WIFI_EVENT_AP_START)
@@ -106,7 +122,7 @@ void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t e
 	}
 	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
 	{
-		//esp_wifi_connect();
+		esp_wifi_connect();
 	}
 	else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED)
 	{
@@ -116,6 +132,7 @@ void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t e
 	}
 	else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
 	{
+		ESP_LOGI("NET", "got ip");
 	}
 	else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_START)
 	{
@@ -265,6 +282,20 @@ esp_err_t TaskNet::WifiCredPost(httpd_req_t* req)
 	return ESP_OK;
 }
 
+static const httpd_uri_t syncNowGetD = {
+	"/sync",
+	HTTP_GET,
+	TaskNet::SyncNowGet,
+	nullptr
+};
+
+esp_err_t TaskNet::SyncNowGet(httpd_req_t* req)
+{
+	taskNet->SetMainEvent(MAIN_NTP_SYNC);
+	httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
+	return ESP_OK;
+}
+
 void TaskNet::startWebServer(httpd_handle_t* server)
 {
 	if (*server != nullptr)
@@ -279,6 +310,7 @@ void TaskNet::startWebServer(httpd_handle_t* server)
 	   	httpd_register_uri_handler(*server, &indexGetD);
 	   	httpd_register_uri_handler(*server, &dateTimePostD);
 	   	httpd_register_uri_handler(*server, &wifiCredPostD);
+	   	httpd_register_uri_handler(*server, &syncNowGetD);
 	}
 }
 

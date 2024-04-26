@@ -120,7 +120,8 @@ extern "C" void app_main(void)
 	{
 		bits = xEventGroupWaitBits(eventGroup,
 				MAIN_SET_TIME|
-				MAIN_WRITE_WIFI_CRED,
+				MAIN_WRITE_WIFI_CRED|
+				MAIN_NTP_SYNC,
 				true, false, 500 / portTICK_PERIOD_MS);
 		if(bits == 0)
 		{
@@ -145,6 +146,10 @@ extern "C" void app_main(void)
 		if((bits & MAIN_WRITE_WIFI_CRED) != 0)
 		{
 			eeprom.WriteWifiCredentials(taskNet.GetPointerSsid(), taskNet.GetPointerPassword());
+		}
+		if((bits & MAIN_NTP_SYNC) != 0)
+		{
+			taskNet.NtpSync();
 		}
 	}
 }

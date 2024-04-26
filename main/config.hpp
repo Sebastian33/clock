@@ -12,6 +12,6 @@ const int PASSWORD_SIZE = 32;
 
 const unsigned MAIN_SET_TIME (1<<0);
 const unsigned MAIN_WRITE_WIFI_CRED (1<<1);
-
+const unsigned MAIN_NTP_SYNC (1<<2);
 
 #endif /* MAIN_CONFIG_HPP_ */

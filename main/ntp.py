@@ -8,11 +8,11 @@ LEAP_BEFORE_1900 = 460
 def sec2date(s):
     if s>=CENTURY:
         leap=1
-        years0=2000
+        years0=100
         s-=CENTURY
     else:
         leap=0
-        years0=1900
+        years0=0
     
     seconds=s%60
     s=s//60
@@ -38,12 +38,11 @@ def sec2date(s):
             days+=1
         
     days=days-leap+1
-    years+=years0
 
     month=0
     while days>DAYS_IN_MONTH[month]:
         days-=DAYS_IN_MONTH[month]
-        if month==1 and ((years%400==0) or (years%4==0 and years%100!=0)):
+        if month==1 and (years0+years>0) and ((years%400==0) or (years%4==0 and years%100!=0)):
             if days>1:
                 days-=1
             else:
@@ -51,8 +50,8 @@ def sec2date(s):
                 month=1
                 break
         month+=1
-        
-    month+=1
+
+    years+=years0
     return (years, month, days, hours, minutes, seconds)
 
 def sec2date2(s):
@@ -82,20 +81,29 @@ def sec2date2(s):
 def date2sec(years, months, days, hours, minutes, seconds):
     seconds+=60*minutes+hours*3600
 
-    for m in range(months-1):
+    for m in range(months):
         days+=DAYS_IN_MONTH[m]
 
-    leap=years//4 
-    leap-=years//100
-    leap+=years//400
-    leap-=LEAP_BEFORE_1900
+    if years<100:
+        leap=years//4 
+        leap-=years//100
+        leap+=years//400
 
-    if (years%400==0) or (years%4==0 and years%100!=0):
-        leap-=1
-        if months>2:
-            days+=1
+        if years!=0 and ((years%400==0) or (years%4==0 and years%100!=0)):
+            if months<=1:
+                leap-=1
 
-    years-=1900
+    else:
+        years-=100
+        days+=36524
+        leap=years//4+1 
+        leap-=years//100
+        leap+=years//400
+
+        if (years%400==0) or (years%4==0 and years%100!=0):
+            if months<=1:
+                leap-=1
+
     days+=years*365+leap-1
     seconds+=days*3600*24
     return seconds
@@ -107,9 +115,9 @@ def test():
 
     while year<2500:
         print(year, month, day)
-        s=date2sec(year, month, day, 0, 0, 0)
+        s=date2sec(year-1900, month-1, day, 0, 0, 0)
         date=sec2date(s)
-        if date[0]!=year or date[1]!=month or date[2]!=day or date[3]!=0 or date[4]!=0 or date[5]!=0:
+        if date[0]!=year-1900 or date[1]!=month-1 or date[2]!=day or date[3]!=0 or date[4]!=0 or date[5]!=0:
             print("nope")
             return
 

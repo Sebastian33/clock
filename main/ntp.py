@@ -3,7 +3,6 @@ import time
 
 CENTURY = 3155673600
 DAYS_IN_MONTH = [31,28,31,30,31,30,31,31,30,31,30,31]
-LEAP_BEFORE_1900 = 460
 
 def sec2date(s):
     if s>=CENTURY:
@@ -113,7 +112,7 @@ def test():
     month=1
     day=1
 
-    while year<2500:
+    while year<4000:
         print(year, month, day)
         s=date2sec(year-1900, month-1, day, 0, 0, 0)
         date=sec2date(s)

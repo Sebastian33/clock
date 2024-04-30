@@ -14,6 +14,16 @@ const char DATETIME_KEY[] = "dt";
 const char SSID_KEY[] = "ssid";
 const char PASSWORD_KEY[] = "passwd";
 
+const u8 DAYS_IN_MONTH[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+
+const int BUF_SIZE = 256;
+const int NTP_LI = 0;
+const int NTP_VN = 4;
+const int NTP_MODE = 3;
+const int NTP_STRATUM = 16;
+const int NTP_POLL = 10;
+const int NTP_PREC = 0;
+
 TaskNet* taskNet = nullptr;
 
 const u8* getIndexPageStart();
@@ -108,6 +118,20 @@ void TaskNet::NtpSync()
 	addr.sin_addr.s_addr = info->h_addr_list[0][0]|(info->h_addr_list[0][1]<<8)|(info->h_addr_list[0][2]<<16)|(info->h_addr_list[0][3]<<24);
 	addr.sin_family = AF_INET;
 	addr.sin_port = 123;
+
+	int socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if(socket<0)
+	{
+		ESP_LOGI("NET", "Failed to create socket");
+		return;
+	}
+
+	u8 buf[BUF_SIZE] = {0};
+	buf[0] = (NTP_LI<<5)|(NTP_VN<<3)|NTP_MODE;
+	buf[1] = NTP_STRATUM;
+	buf[2] = NTP_POLL;
+	buf[3] = NTP_PREC;
+	strcat((char*)buf+12, "REFR");
 }
 
 void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -321,4 +345,114 @@ void TaskNet::stopWebServer(httpd_handle_t* server)
 		httpd_stop(*server);
 		*server = nullptr;
 	}
+}
+
+u64 TaskNet::date2sec(const tm& dt)
+{
+	u64 s = dt.tm_sec+dt.tm_min*60+dt.tm_hour*3600;
+
+	int days = dt.tm_mday;
+	for(int m=0; m<dt.tm_mon; m++)
+	{
+		days += DAYS_IN_MONTH[m];
+	}
+
+	int leap;
+	if(dt.tm_year<100)
+	{
+		leap = dt.tm_year/4;
+		leap -= dt.tm_year/100;
+		leap += dt.tm_year/400;
+		if(dt.tm_year!=0 && (dt.tm_year%400==0 || (dt.tm_year%4==0 && dt.tm_year%100!=0)))
+		{
+			if (dt.tm_mon<=1)
+				leap--;
+		}
+	}
+	else
+	{
+		dt.tm_year -= 100;
+		days += 36524;
+		leap = dt.tm_year/4 + 1;
+		leap -= dt.tm_year/100;
+		leap += dt.tm_year/400;
+		if(dt.tm_year%400==0 || (dt.tm_year%4==0 && dt.tm_year%100!=0))
+		{
+			if (dt.tm_mon<=1)
+				leap--;
+		}
+	}
+
+	days += dt.tm_year*365+leap-1;
+	s += static_cast<u64>(days)*3600*24;
+	return s;
+}
+
+tm TaskNet::sec2date(u64 s)
+{
+	const u32 CENTURY = 3155673600;
+	int leap;
+	int years0;
+	if (s>=CENTURY)
+	{
+		leap = 1;
+		years0 = 100;
+		s -= CENTURY;
+	}
+	else
+	{
+		leap = 0;
+		years0 = 0;
+	}
+
+	tm dt;
+	dt.tm_sec = s%60;
+	s /= 60;
+	dt.tm_min = s%60;
+	s /= 60;
+	dt.tm_hour = s%24;
+	s /= 24;
+
+	int days = s%365;
+	dt.tm_year = s/365;
+
+	leap += dt.tm_year/4;
+	leap -= dt.tm_year/100;
+	leap += dt.tm_year/400;
+	if(leap!=0 && (dt.tm_year%400==0 || (dt.tm_year%4 && dt.tm_year%100!=0)))
+	{
+		leap--;
+	}
+
+	while(days<leap)
+	{
+		dt.tm_year--;
+		days+=365;
+		if(dt.tm_year%400==0 || (dt.tm_year%4 && dt.tm_year%100!=0))
+		{
+			days++;
+		}
+	}
+	days -= leap-1;
+
+	dt.tm_mon = 0;
+	while(days>DAYS_IN_MONTH[dt.tm_mon])
+	{
+		days -= DAYS_IN_MONTH[dt.tm_mon];
+		if(dt.tm_mon==1 && (dt.tm_year+years0) && (dt.tm_year%400==0 || (dt.tm_year%4 && dt.tm_year%100!=0)))
+		{
+			if(days>1)
+				days--;
+			else
+			{
+				days = 29;
+				dt.tm_mon = 1;
+				break;
+			}
+		}
+		dt.tm_mon++;
+	}
+	dt.tm_mday = days;
+	dt.tm_year += years0;
+	return dt;
 }

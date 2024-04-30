@@ -29,6 +29,8 @@ public:
 	static esp_err_t WifiCredPost(httpd_req_t* req);
 	static esp_err_t SyncNowGet(httpd_req_t* req);
 
+	u64 date2sec(const tm& dt);
+	tm sec2date(u64 s);
 private:
 	EventGroupHandle_t* mainEventGroup;
 

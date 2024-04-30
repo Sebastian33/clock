@@ -6,6 +6,8 @@
 #include "freertos/event_groups.h"
 
 using u8 = unsigned char;
+using u32 = unsigned;
+using u64 = unsigned long long;
 
 const int SSID_SIZE = 32;
 const int PASSWORD_SIZE = 32;

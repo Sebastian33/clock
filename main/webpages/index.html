@@ -4,7 +4,7 @@
 </head>
 <body>
 
-<h2>Set Time</h2>
+<h2>Set/Get Time</h2>
 <form name="DateTimeForm" action="/datetime" method="post">
   <input type="datetime-local" id="dt" name="dt" required>
   <br>
@@ -12,6 +12,9 @@
   <input type="submit" value="Set date and time">
   <!--input type="button" value="submit" onclick="postDT()"-->
 </form>
+<br>
+<input type="button" value="GetTime" onclick="getDateTime()">
+
 
 <h2>Set Wifi credentials</h2>
 <form name="WifiForm" action="/wifi" method="post">
@@ -24,6 +27,7 @@
   <input type="submit" value="Set Wifi Credentials">
 </form>
 <br>
+
 <form name="SyncNow" action="/sync">
   <input type="submit" value="Sync">
 </form>
@@ -32,8 +36,28 @@
 </html>
 
 <script>
-	function postDT()
+	function sleep(ms) 
 	{
-		DateTime.submit();
+    	return new Promise(resolve => setTimeout(resolve, ms));
+	}
+
+	async function getDateTime()
+	{
+	
+		let host = window.location;
+		let res = await fetch(host+'requestDatetime');
+		if (!res.ok)
+		{
+			return;
+		}	
+		await sleep(1000)
+		
+		res = await fetch(host+'datetime');
+		if (!res.ok)
+		{
+			return;
+		}
+		let json = await res.json();
+		alert(json.datetime)
 	}
 </script>

@@ -3,6 +3,8 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qsl, urlparse
 
+import time
+
 class WebRequestHandler(BaseHTTPRequestHandler):
     @cached_property
     def url(self):
@@ -32,8 +34,17 @@ class WebRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.send_response(200)
-        self.end_headers()
-        self.wfile.write(self.get_response())
+        if self.path=='/':
+            self.end_headers()
+            self.wfile.write(self.get_response())
+        elif self.path=='/datetime':
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            now = time.localtime()
+            rsp = '{"datetime":"'+str(now.tm_year)+'-'+str(now.tm_mon)+'-'+str(now.tm_mday)+' '+str(now.tm_hour)+':'+str(now.tm_min)+':'+str(now.tm_sec)+'"}'
+            self.wfile.write(rsp.encode())
+        elif self.path=='/requestDatetime':
+            self.end_headers()
 
     def do_POST(self):
         self.send_response(200)

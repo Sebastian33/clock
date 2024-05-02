@@ -17,7 +17,7 @@ public:
 	char* GetPointerSsid();
 	char* GetPointerPassword();
 	void SetMainEvent(unsigned event);
-	void NtpSync();
+	esp_err_t NtpSync(tm& dt);
 
 	static void startWebServer(httpd_handle_t* server);
 	static void stopWebServer(httpd_handle_t* server);

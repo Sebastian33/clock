@@ -149,7 +149,9 @@ extern "C" void app_main(void)
 		}
 		if((bits & MAIN_NTP_SYNC) != 0)
 		{
-			taskNet.NtpSync();
+			taskNet.NtpSync(dt);
+			//ESP_LOGI("MAIN", "%d-%d-%d %d %d %d", dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+			taskNet.SetMainEvent(MAIN_SET_TIME);
 		}
 	}
 }

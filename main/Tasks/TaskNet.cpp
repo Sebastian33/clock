@@ -16,6 +16,7 @@ const char PASSWORD_KEY[] = "passwd";
 
 const u8 DAYS_IN_MONTH[] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
+const char NTP_SERVER_URL[] = "time.google.com";
 const int BUF_SIZE = 256;
 const int NTP_LI = 0;
 const int NTP_VN = 4;
@@ -107,31 +108,64 @@ void TaskNet::SetMainEvent(unsigned event)
 	xEventGroupSetBits(*mainEventGroup, event);
 }
 
-void TaskNet::NtpSync()
+esp_err_t TaskNet::NtpSync(tm& dt)
 {
-	hostent* info = gethostbyname("time.google.com");
+	hostent* info = gethostbyname(NTP_SERVER_URL);
 	if(info->h_addr_list==nullptr)
 	{
-		return;
+		return ESP_ERR_NOT_FOUND;
 	}
 	sockaddr_in addr;
-	addr.sin_addr.s_addr = info->h_addr_list[0][0]|(info->h_addr_list[0][1]<<8)|(info->h_addr_list[0][2]<<16)|(info->h_addr_list[0][3]<<24);
+	addr.sin_addr.s_addr = static_cast<u32>(info->h_addr_list[0][0])|(static_cast<u32>(info->h_addr_list[0][1])<<8)|
+			(static_cast<u32>(info->h_addr_list[0][2])<<16)|(static_cast<u32>(info->h_addr_list[0][3])<<24);
 	addr.sin_family = AF_INET;
-	addr.sin_port = 123;
+	addr.sin_port = htons(123);
 
-	int socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-	if(socket<0)
+	int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if(sock<0)
 	{
 		ESP_LOGI("NET", "Failed to create socket");
-		return;
+		return ESP_FAIL;
 	}
 
-	u8 buf[BUF_SIZE] = {0};
+	timeval timeout;
+	timeout.tv_sec = 10;
+	timeout.tv_usec = 0;
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+	setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+
+	u8 buf[BUF_SIZE];
+	memset(buf, 0, BUF_SIZE);
 	buf[0] = (NTP_LI<<5)|(NTP_VN<<3)|NTP_MODE;
 	buf[1] = NTP_STRATUM;
 	buf[2] = NTP_POLL;
 	buf[3] = NTP_PREC;
 	strcat((char*)buf+12, "REFR");
+	//ts of last sync
+	//current ts
+	u64 s = 0;//date2sec(dt);
+	buf[24] = (s>>24)&0xff;
+	buf[25] = (s>>16)&0xff;
+	buf[26] = (s>>8)&0xff;
+	buf[27] = s&0xff;
+
+	int res = sendto(sock, (void*)buf, 48, 0, (sockaddr*)&addr, sizeof(addr));
+	if(res<0)
+	{
+		ESP_LOGI("NET", "Failed to sync");
+		return ESP_FAIL;
+	}
+	socklen_t asize = sizeof(addr);
+	res = recvfrom(sock, buf, BUF_SIZE, 0, (sockaddr*)&addr, &asize);
+	if(res<0)
+	{
+		ESP_LOGI("NET", "Failed to sync");
+		return ESP_FAIL;
+	}
+	s = static_cast<u32>(buf[43])+(static_cast<u32>(buf[42])<<8)+(static_cast<u32>(buf[41])<<16)+(static_cast<u32>(buf[40])<<24);
+	dt = sec2date(s);
+	taskNet->SetTime(dt);
+	return ESP_OK;
 }
 
 void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -352,18 +386,19 @@ u64 TaskNet::date2sec(const tm& dt)
 	u64 s = dt.tm_sec+dt.tm_min*60+dt.tm_hour*3600;
 
 	int days = dt.tm_mday;
+	int years = dt.tm_year;
 	for(int m=0; m<dt.tm_mon; m++)
 	{
 		days += DAYS_IN_MONTH[m];
 	}
 
 	int leap;
-	if(dt.tm_year<100)
+	if(years<100)
 	{
-		leap = dt.tm_year/4;
-		leap -= dt.tm_year/100;
-		leap += dt.tm_year/400;
-		if(dt.tm_year!=0 && (dt.tm_year%400==0 || (dt.tm_year%4==0 && dt.tm_year%100!=0)))
+		leap = years/4;
+		leap -= years/100;
+		leap += years/400;
+		if(years!=0 && (years%400==0 || (years%4==0 && years%100!=0)))
 		{
 			if (dt.tm_mon<=1)
 				leap--;
@@ -371,19 +406,19 @@ u64 TaskNet::date2sec(const tm& dt)
 	}
 	else
 	{
-		dt.tm_year -= 100;
+		years -= 100;
 		days += 36524;
-		leap = dt.tm_year/4 + 1;
-		leap -= dt.tm_year/100;
-		leap += dt.tm_year/400;
-		if(dt.tm_year%400==0 || (dt.tm_year%4==0 && dt.tm_year%100!=0))
+		leap = years/4 + 1;
+		leap -= years/100;
+		leap += years/400;
+		if(years%400==0 || (years%4==0 && years%100!=0))
 		{
 			if (dt.tm_mon<=1)
 				leap--;
 		}
 	}
 
-	days += dt.tm_year*365+leap-1;
+	days += years*365+leap-1;
 	s += static_cast<u64>(days)*3600*24;
 	return s;
 }

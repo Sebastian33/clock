@@ -37,13 +37,21 @@ class WebRequestHandler(BaseHTTPRequestHandler):
         if self.path=='/':
             self.end_headers()
             self.wfile.write(self.get_response())
-        elif self.path=='/datetime':
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            now = time.localtime()
-            rsp = '{"datetime":"'+str(now.tm_year)+'-'+str(now.tm_mon)+'-'+str(now.tm_mday)+' '+str(now.tm_hour)+':'+str(now.tm_min)+':'+str(now.tm_sec)+'"}'
-            self.wfile.write(rsp.encode())
-        elif self.path=='/requestDatetime':
+        elif self.path.startswith('/datetime'):
+            args = self.path[self.path.find('?'):]
+            cmd = args[args.find('cmd=')+len('cmd='):]
+            if cmd == 'req':
+                print("request date")
+                self.end_headers()
+            elif cmd == 'get':
+                print("get date")
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                now = time.localtime()
+                rsp = '{"datetime":"'+str(now.tm_year)+'-'+str(now.tm_mon)+'-'+str(now.tm_mday)+' '+str(now.tm_hour)+':'+str(now.tm_min)+':'+str(now.tm_sec)+'"}'
+                self.wfile.write(rsp.encode())
+        else:
+            print("here")
             self.end_headers()
 
     def do_POST(self):

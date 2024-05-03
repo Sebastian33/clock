@@ -26,8 +26,8 @@
   <br>
   <input type="submit" value="Set Wifi Credentials">
 </form>
-<br>
 
+<h2>NTP</h2>
 <form name="SyncNow" action="/sync">
   <input type="submit" value="Sync">
 </form>
@@ -43,16 +43,15 @@
 
 	async function getDateTime()
 	{
-	
 		let host = window.location;
-		let res = await fetch(host+'requestDatetime');
+		let res = await fetch(host+'datetime?cmd=req');
 		if (!res.ok)
 		{
 			return;
 		}	
 		await sleep(1000)
 		
-		res = await fetch(host+'datetime');
+		res = await fetch(host+'datetime?cmd=get');
 		if (!res.ok)
 		{
 			return;

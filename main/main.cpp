@@ -120,6 +120,7 @@ extern "C" void app_main(void)
 	{
 		bits = xEventGroupWaitBits(eventGroup,
 				MAIN_SET_TIME|
+				MAIN_GET_TIME|
 				MAIN_WRITE_WIFI_CRED|
 				MAIN_NTP_SYNC,
 				true, false, 500 / portTICK_PERIOD_MS);
@@ -142,6 +143,10 @@ extern "C" void app_main(void)
 		{
 			dt = taskNet.GetTime();
 			rtc.WriteDateTime(dt);
+		}
+		if((bits & MAIN_SET_TIME) != 0)
+		{
+			taskNet.SetTime(dt);
 		}
 		if((bits & MAIN_WRITE_WIFI_CRED) != 0)
 		{

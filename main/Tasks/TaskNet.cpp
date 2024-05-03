@@ -293,6 +293,54 @@ esp_err_t TaskNet::DateTimePost(httpd_req_t* req)
 	return ESP_OK;
 }
 
+static const httpd_uri_t dateTimeGetD = {
+	"/datetime",
+	HTTP_GET,
+	TaskNet::DateTimeGet,
+	nullptr
+};
+
+esp_err_t TaskNet::DateTimeGet(httpd_req_t* req)
+{
+	char buf[64];
+	if(httpd_req_get_url_query_len(req)>64)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Very long data");
+		return ESP_FAIL;
+	}
+
+	if(httpd_req_get_url_query_str(req, buf, 64)!=ESP_OK)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Corrupted data");
+		return ESP_FAIL;
+	}
+	char cmd[16] = {0};
+	if(httpd_query_key_value(buf, "cmd", cmd, 16)!=ESP_OK)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Wrong data");
+		return ESP_FAIL;
+	}
+
+	if(strcmp(cmd, "req")==0)
+	{
+		taskNet->SetMainEvent(MAIN_SET_TIME);
+		httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
+	}
+	else if(strcmp(cmd, "get")==0)
+	{
+		tm dt = taskNet->GetTime();
+		//sprintf(buf, "{\"datetime\":\"%d-%d-%d %d:%d:%d\"}", dt.tm_year+1900, dt.tm_mon+1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+		sprintf(buf, "{\"datetime\":\"1234-5-6 7:8:9\"}");
+		httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
+	}
+	else
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Wrong command");
+		return ESP_FAIL;
+	}
+	return ESP_OK;
+}
+
 static const httpd_uri_t wifiCredPostD = {
 	"/wifi",
 	HTTP_POST,
@@ -367,6 +415,7 @@ void TaskNet::startWebServer(httpd_handle_t* server)
 	{
 	   	httpd_register_uri_handler(*server, &indexGetD);
 	   	httpd_register_uri_handler(*server, &dateTimePostD);
+	   	httpd_register_uri_handler(*server, &dateTimeGetD);
 	   	httpd_register_uri_handler(*server, &wifiCredPostD);
 	   	httpd_register_uri_handler(*server, &syncNowGetD);
 	}

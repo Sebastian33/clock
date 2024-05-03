@@ -26,6 +26,7 @@ public:
 
 	static esp_err_t IndexGet(httpd_req_t* req);
 	static esp_err_t DateTimePost(httpd_req_t* req);
+	static esp_err_t DateTimeGet(httpd_req_t* req);
 	static esp_err_t WifiCredPost(httpd_req_t* req);
 	static esp_err_t SyncNowGet(httpd_req_t* req);
 

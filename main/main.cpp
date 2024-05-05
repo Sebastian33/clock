@@ -18,8 +18,9 @@ const gpio_num_t GPIO_SER = GPIO_NUM_15;
 const gpio_num_t GPIO_PWM = GPIO_NUM_16;
 const gpio_num_t GPIO_RCLK = GPIO_NUM_17;
 
-
 u8 digitEncoded[] = {0xe7, 0x42, 0xd5, 0xd6, 0x72, 0xb6, 0xb7, 0xc2, 0xf7, 0xf6};
+
+const int NTP_RETRY_COUNTER = 60;
 
 extern const u8 index_page_start[] asm("_binary_index_html_start");
 extern const u8 index_page_end[]   asm("_binary_index_html_end");
@@ -119,6 +120,7 @@ extern "C" void app_main(void)
 	int timezone = 0;
 	eeprom.ReadTimezone(timezone);
 	int sync = 0;
+	int retries = 0;
 
 	while(true)
 	{
@@ -135,12 +137,17 @@ extern "C" void app_main(void)
 			if(dt.tm_hour == 0 && sync != 0)
 			{
 				sync = 0;
+				retries = 0;
 			}
 			else if(sync == 0 &&
-					((timezone=>0 && dt.tm_hour-timezone==1) ||
-					(timezone<0 && dt.tm_hour+timezone==23)))
+					((timezone>=0 && dt.tm_hour+timezone==1) ||
+					(timezone<0 && dt.tm_hour-timezone==23)))
 			{
-
+				xEventGroupSetBits(eventGroup, MAIN_NTP_SYNC);
+			}
+			else if(sync<0)
+			{
+				sync++;
 			}
 
 			buf[0]=dt.tm_min%10;
@@ -160,7 +167,7 @@ extern "C" void app_main(void)
 			dt = taskNet.GetTime();
 			rtc.WriteDateTime(dt);
 		}
-		if((bits & MAIN_SET_TIME) != 0)
+		if((bits & MAIN_GET_TIME) != 0)
 		{
 			taskNet.SetTime(dt);
 		}
@@ -170,9 +177,24 @@ extern "C" void app_main(void)
 		}
 		if((bits & MAIN_NTP_SYNC) != 0)
 		{
-			taskNet.NtpSync(dt);
+			esp_err_t res = taskNet.NtpSync(dt);
+			if(res != ESP_OK)
+			{
+				if(sync==0  && retries<5)
+				{
+					sync = -NTP_RETRY_COUNTER;
+					retries++;
+				}
+				else if(sync==0 && retries>=5)
+					sync = 1;
+				continue;
+			}
+
+			taskNet.addTimezone(dt, timezone);
+			taskNet.SetTime(dt);
 			//ESP_LOGI("MAIN", "%d-%d-%d %d %d %d", dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
 			xEventGroupSetBits(eventGroup, MAIN_SET_TIME);
+			sync = 1;
 		}
 	}
 }

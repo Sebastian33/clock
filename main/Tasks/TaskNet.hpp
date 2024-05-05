@@ -32,6 +32,7 @@ public:
 
 	u64 date2sec(const tm& dt);
 	tm sec2date(u64 s);
+	void addTimezone(tm& dt, int timezone);
 private:
 	EventGroupHandle_t* mainEventGroup;
 

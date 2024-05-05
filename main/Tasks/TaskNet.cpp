@@ -169,7 +169,6 @@ esp_err_t TaskNet::NtpSync(tm& dt)
 		ESP_LOGI("NET", "Broken data");
 		return ESP_FAIL;
 	}
-	taskNet->SetTime(dt);
 	return ESP_OK;
 }
 
@@ -508,7 +507,7 @@ tm TaskNet::sec2date(u64 s)
 	leap += dt.tm_year/4;
 	leap -= dt.tm_year/100;
 	leap += dt.tm_year/400;
-	if(leap!=0 && (dt.tm_year%400==0 || (dt.tm_year%4 && dt.tm_year%100!=0)))
+	if(leap!=0 && (dt.tm_year%400==0 || (dt.tm_year%4==0 && dt.tm_year%100!=0)))
 	{
 		leap--;
 	}
@@ -517,7 +516,7 @@ tm TaskNet::sec2date(u64 s)
 	{
 		dt.tm_year--;
 		days+=365;
-		if(dt.tm_year%400==0 || (dt.tm_year%4 && dt.tm_year%100!=0))
+		if(dt.tm_year%400==0 || (dt.tm_year%4==0 && dt.tm_year%100!=0))
 		{
 			days++;
 		}
@@ -528,7 +527,7 @@ tm TaskNet::sec2date(u64 s)
 	while(days>DAYS_IN_MONTH[dt.tm_mon])
 	{
 		days -= DAYS_IN_MONTH[dt.tm_mon];
-		if(dt.tm_mon==1 && (dt.tm_year+years0) && (dt.tm_year%400==0 || (dt.tm_year%4 && dt.tm_year%100!=0)))
+		if(dt.tm_mon==1 && (dt.tm_year+years0) && (dt.tm_year%400==0 || (dt.tm_year%4==0 && dt.tm_year%100!=0)))
 		{
 			if(days>1)
 				days--;
@@ -544,6 +543,59 @@ tm TaskNet::sec2date(u64 s)
 	dt.tm_mday = days;
 	dt.tm_year += years0;
 	return dt;
+}
+
+void TaskNet::addTimezone(tm& dt, int timezone)
+{
+	dt.tm_hour += timezone;
+	if(dt.tm_hour>24)
+	{
+		dt.tm_hour -= 24;
+		dt.tm_mday++;
+		if(dt.tm_mon!=1 && DAYS_IN_MONTH[dt.tm_mon]<dt.tm_mday)
+		{
+			dt.tm_mday = 1;
+			dt.tm_mon++;
+		}
+		else if(dt.tm_mon==1)
+		{
+			if(dt.tm_mday==30 ||
+				(dt.tm_mday==29 && dt.tm_year%400!=0 && (dt.tm_year%4!=0 || dt.tm_year%100==0)))
+			{
+				dt.tm_mday = 1;
+				dt.tm_mon++;
+			}
+		}
+
+		if(dt.tm_mon>=12)
+		{
+			dt.tm_mon = 0;
+			dt.tm_year++;
+		}
+	}
+	else if(dt.tm_hour<0)
+	{
+		dt.tm_hour += 24;
+		dt.tm_mday--;
+		if(dt.tm_mday<=0)
+		{
+			dt.tm_mon--;
+			if(dt.tm_mon<0)
+			{
+				dt.tm_mon = 11;
+				dt.tm_year--;
+			}
+
+			if(dt.tm_mon==1 && (dt.tm_year%400==0 || (dt.tm_year%4==0 && dt.tm_year%100!=0)))
+			{
+				dt.tm_mday=29;
+			}
+			else
+			{
+				dt.tm_mday = DAYS_IN_MONTH[dt.tm_mon];
+			}
+		}
+	}
 }
 
 bool TaskNet::isTimeValid(const tm& dt)

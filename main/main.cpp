@@ -116,6 +116,10 @@ extern "C" void app_main(void)
 	u8 buf[4];
 	unsigned bits;
 	tm dt;
+	int timezone = 0;
+	eeprom.ReadTimezone(timezone);
+	int sync = 0;
+
 	while(true)
 	{
 		bits = xEventGroupWaitBits(eventGroup,
@@ -127,6 +131,18 @@ extern "C" void app_main(void)
 		if(bits == 0)
 		{
 			dt = rtc.ReadDateTime();
+
+			if(dt.tm_hour == 0 && sync != 0)
+			{
+				sync = 0;
+			}
+			else if(sync == 0 &&
+					((timezone=>0 && dt.tm_hour-timezone==1) ||
+					(timezone<0 && dt.tm_hour+timezone==23)))
+			{
+
+			}
+
 			buf[0]=dt.tm_min%10;
 			buf[1]=dt.tm_min/10;
 			buf[2]=dt.tm_hour%10;
@@ -156,7 +172,7 @@ extern "C" void app_main(void)
 		{
 			taskNet.NtpSync(dt);
 			//ESP_LOGI("MAIN", "%d-%d-%d %d %d %d", dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-			taskNet.SetMainEvent(MAIN_SET_TIME);
+			xEventGroupSetBits(eventGroup, MAIN_SET_TIME);
 		}
 	}
 }

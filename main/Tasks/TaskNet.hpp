@@ -43,6 +43,8 @@ private:
 	tm dateTime;
 	char ssid[SSID_SIZE];
 	char password[PASSWORD_SIZE];
+
+	bool isTimeValid(const tm& dt);
 };
 
 

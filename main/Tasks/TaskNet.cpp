@@ -143,7 +143,7 @@ esp_err_t TaskNet::NtpSync(tm& dt)
 	strcat((char*)buf+12, "REFR");
 	//ts of last sync
 	//current ts
-	u64 s = 0;//date2sec(dt);
+	u64 s = date2sec(dt);
 	buf[24] = (s>>24)&0xff;
 	buf[25] = (s>>16)&0xff;
 	buf[26] = (s>>8)&0xff;
@@ -157,13 +157,18 @@ esp_err_t TaskNet::NtpSync(tm& dt)
 	}
 	socklen_t asize = sizeof(addr);
 	res = recvfrom(sock, buf, BUF_SIZE, 0, (sockaddr*)&addr, &asize);
-	if(res<0)
+	if(res<40)
 	{
 		ESP_LOGI("NET", "Failed to sync");
 		return ESP_FAIL;
 	}
 	s = static_cast<u32>(buf[43])+(static_cast<u32>(buf[42])<<8)+(static_cast<u32>(buf[41])<<16)+(static_cast<u32>(buf[40])<<24);
 	dt = sec2date(s);
+	if(!isTimeValid(dt))
+	{
+		ESP_LOGI("NET", "Broken data");
+		return ESP_FAIL;
+	}
 	taskNet->SetTime(dt);
 	return ESP_OK;
 }
@@ -329,8 +334,8 @@ esp_err_t TaskNet::DateTimeGet(httpd_req_t* req)
 	else if(strcmp(cmd, "get")==0)
 	{
 		tm dt = taskNet->GetTime();
-		//sprintf(buf, "{\"datetime\":\"%d-%d-%d %d:%d:%d\"}", dt.tm_year+1900, dt.tm_mon+1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-		sprintf(buf, "{\"datetime\":\"1234-5-6 7:8:9\"}");
+		sprintf(buf, "{\"datetime\":\"%d-%d-%d %d:%d:%d\"}", dt.tm_year+1900, dt.tm_mon+1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+		//sprintf(buf, "{\"datetime\":\"1234-5-6 7:8:9\"}");
 		httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
 	}
 	else
@@ -539,4 +544,14 @@ tm TaskNet::sec2date(u64 s)
 	dt.tm_mday = days;
 	dt.tm_year += years0;
 	return dt;
+}
+
+bool TaskNet::isTimeValid(const tm& dt)
+{
+	return dt.tm_year>=124 && dt.tm_year<200 &&
+			dt.tm_mon>=0 && dt.tm_mon<12 &&
+			dt.tm_mday>=1 && dt.tm_mday<=31 &&
+			dt.tm_hour>=0 && dt.tm_hour<24 &&
+			dt.tm_min>=0 && dt.tm_min<60 &&
+			dt.tm_sec>=0 && dt.tm_sec<60;
 }

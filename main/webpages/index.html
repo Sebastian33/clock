@@ -4,7 +4,7 @@
 </head>
 <body>
 
-<h2>Set/Get Time</h2>
+<h2>Time</h2>
 <form name="DateTimeForm" action="/datetime" method="post">
   <input type="datetime-local" id="dt" name="dt" required>
   <br>
@@ -12,11 +12,17 @@
   <input type="submit" value="Set date and time">
   <!--input type="button" value="submit" onclick="postDT()"-->
 </form>
+<input type="button" value="Get Time" onclick="getDateTime()">
 <br>
-<input type="button" value="GetTime" onclick="getDateTime()">
+<br>
+<form name="TimezoneForm" action="/timezone" method="post">
+  <label for="timezone">Timezone:</label><br>
+  <input type="number" name="timezone" min="-12" max="12" required><br>
+  <br>
+  <input type="submit" value="Set Timezone">
+</form>
 
-
-<h2>Set Wifi credentials</h2>
+<h2>Wifi credentials</h2>
 <form name="WifiForm" action="/wifi" method="post">
   <label for="ssid">SSID:</label><br>
   <input type="text" name="ssid" required><br>

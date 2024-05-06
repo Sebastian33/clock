@@ -18,6 +18,8 @@ public:
 	char* GetPointerPassword();
 	void SetMainEvent(unsigned event);
 	esp_err_t NtpSync(tm& dt);
+	int GetTimezone();
+	void SetTimezone(int tz);
 
 	static void startWebServer(httpd_handle_t* server);
 	static void stopWebServer(httpd_handle_t* server);
@@ -29,6 +31,7 @@ public:
 	static esp_err_t DateTimeGet(httpd_req_t* req);
 	static esp_err_t WifiCredPost(httpd_req_t* req);
 	static esp_err_t SyncNowGet(httpd_req_t* req);
+	static esp_err_t TimezonePost(httpd_req_t* req);
 
 	u64 date2sec(const tm& dt);
 	tm sec2date(u64 s);
@@ -44,6 +47,7 @@ private:
 	tm dateTime;
 	char ssid[SSID_SIZE];
 	char password[PASSWORD_SIZE];
+	int timezone;
 
 	bool isTimeValid(const tm& dt);
 };

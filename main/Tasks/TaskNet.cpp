@@ -13,6 +13,7 @@ const char AP_PASSWORD[] = "elpsykongroo";
 const char DATETIME_KEY[] = "dt";
 const char SSID_KEY[] = "ssid";
 const char PASSWORD_KEY[] = "passwd";
+const char TZ_KEY[] = "timezone";
 
 const u8 DAYS_IN_MONTH[] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
@@ -172,6 +173,18 @@ esp_err_t TaskNet::NtpSync(tm& dt)
 	return ESP_OK;
 }
 
+int TaskNet::GetTimezone()
+{
+	return timezone;
+}
+
+void TaskNet::SetTimezone(int tz)
+{
+	if(tz<-12 || tz>12)
+		return;
+	timezone = tz;
+}
+
 void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
 	if (event_id == WIFI_EVENT_AP_START)
@@ -291,7 +304,7 @@ esp_err_t TaskNet::DateTimePost(httpd_req_t* req)
 	dt.tm_sec = 0;
 	taskNet->SetTime(dt);
 
-	taskNet->SetMainEvent(MAIN_SET_TIME);
+	taskNet->SetMainEvent(MAIN_UPDATE_TIME);
 
 	httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
 	return ESP_OK;
@@ -327,7 +340,7 @@ esp_err_t TaskNet::DateTimeGet(httpd_req_t* req)
 
 	if(strcmp(cmd, "req")==0)
 	{
-		taskNet->SetMainEvent(MAIN_SET_TIME);
+		taskNet->SetMainEvent(MAIN_UPDATE_TIME);
 		httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
 	}
 	else if(strcmp(cmd, "get")==0)
@@ -406,6 +419,48 @@ esp_err_t TaskNet::SyncNowGet(httpd_req_t* req)
 	return ESP_OK;
 }
 
+static const httpd_uri_t timezonePostD = {
+	"/timezone",
+	HTTP_POST,
+	TaskNet::TimezonePost,
+	nullptr
+};
+
+esp_err_t TaskNet::TimezonePost(httpd_req_t* req)
+{
+	char request[128];
+	if(req->content_len>128)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Very long data");
+		return ESP_FAIL;
+	}
+	int ret = httpd_req_recv(req, request, req->content_len);
+	if (ret<=0)
+	{
+		if(ret == HTTPD_SOCK_ERR_TIMEOUT)
+		{
+			httpd_resp_send_408(req);
+		}
+		return ESP_FAIL;
+	}
+
+	request[req->content_len] = '\0';
+	decodeURL(request);
+	if(strstr(request, TZ_KEY) == nullptr)
+	{
+		httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Data is missing");
+		return ESP_FAIL;
+	}
+
+	char* tz = request+1+strlen(TZ_KEY);
+	taskNet->SetTimezone(atoi(tz));
+
+	taskNet->SetMainEvent(MAIN_SET_TZ);
+
+	httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
+	return ESP_OK;
+}
+
 void TaskNet::startWebServer(httpd_handle_t* server)
 {
 	if (*server != nullptr)
@@ -422,6 +477,7 @@ void TaskNet::startWebServer(httpd_handle_t* server)
 	   	httpd_register_uri_handler(*server, &dateTimeGetD);
 	   	httpd_register_uri_handler(*server, &wifiCredPostD);
 	   	httpd_register_uri_handler(*server, &syncNowGetD);
+	   	httpd_register_uri_handler(*server, &timezonePostD);
 	}
 }
 

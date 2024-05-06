@@ -125,10 +125,11 @@ extern "C" void app_main(void)
 	while(true)
 	{
 		bits = xEventGroupWaitBits(eventGroup,
-				MAIN_SET_TIME|
-				MAIN_GET_TIME|
+				MAIN_UPDATE_TIME|
+				MAIN_CP_TIME|
 				MAIN_WRITE_WIFI_CRED|
-				MAIN_NTP_SYNC,
+				MAIN_NTP_SYNC|
+				MAIN_SET_TZ,
 				true, false, 500 / portTICK_PERIOD_MS);
 		if(bits == 0)
 		{
@@ -162,12 +163,12 @@ extern "C" void app_main(void)
 			continue;
 		}
 
-		if((bits & MAIN_SET_TIME) != 0)
+		if((bits & MAIN_UPDATE_TIME) != 0)
 		{
 			dt = taskNet.GetTime();
 			rtc.WriteDateTime(dt);
 		}
-		if((bits & MAIN_GET_TIME) != 0)
+		if((bits & MAIN_CP_TIME) != 0)
 		{
 			taskNet.SetTime(dt);
 		}
@@ -193,8 +194,13 @@ extern "C" void app_main(void)
 			taskNet.addTimezone(dt, timezone);
 			taskNet.SetTime(dt);
 			//ESP_LOGI("MAIN", "%d-%d-%d %d %d %d", dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-			xEventGroupSetBits(eventGroup, MAIN_SET_TIME);
+			xEventGroupSetBits(eventGroup, MAIN_UPDATE_TIME);
 			sync = 1;
+		}
+		if((bits & MAIN_SET_TZ) > 0)
+		{
+			timezone = taskNet.GetTimezone();
+			eeprom.WriteTimezone(timezone);
 		}
 	}
 }

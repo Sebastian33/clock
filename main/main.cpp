@@ -103,9 +103,11 @@ extern "C" void app_main(void)
 
 	TaskNet taskNet;
 	eeprom.ReadWifiCredentials(taskNet.GetPointerSsid(),taskNet.GetPointerPassword());
+	ESP_LOGI("MAIN", "%s %s", taskNet.GetPointerSsid(),taskNet.GetPointerPassword());
 
 	InitPwm();
 	InitOutput();
+
 	RTCDriver rtc;
 	rtc.Init();
 
@@ -144,7 +146,7 @@ extern "C" void app_main(void)
 					((timezone>=0 && dt.tm_hour+timezone==1) ||
 					(timezone<0 && dt.tm_hour-timezone==23)))
 			{
-				xEventGroupSetBits(eventGroup, MAIN_NTP_SYNC);
+				//xEventGroupSetBits(eventGroup, MAIN_NTP_SYNC);
 			}
 			else if(sync<0)
 			{
@@ -179,6 +181,7 @@ extern "C" void app_main(void)
 		if((bits & MAIN_NTP_SYNC) != 0)
 		{
 			esp_err_t res = taskNet.NtpSync(dt);
+			ESP_LOGI("MAIN", "sync: %d-%d-%d %d %d %d", dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
 			if(res != ESP_OK)
 			{
 				if(sync==0  && retries<5)
@@ -192,8 +195,7 @@ extern "C" void app_main(void)
 			}
 
 			taskNet.addTimezone(dt, timezone);
-			taskNet.SetTime(dt);
-			//ESP_LOGI("MAIN", "%d-%d-%d %d %d %d", dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+			//taskNet.SetTime(dt);
 			xEventGroupSetBits(eventGroup, MAIN_UPDATE_TIME);
 			sync = 1;
 		}

@@ -1,5 +1,6 @@
 #include "Eeprom.hpp"
 
+#include "esp_log.h"
 const char NAMESPACE[] = "storage";
 
 const char EEPROM_SSID_KEY[] = "ssidKey";
@@ -37,7 +38,12 @@ void Eeprom::ReadWifiCredentials(char* ssid, char* password)
 void Eeprom::WriteWifiCredentials(const char* ssid, const char* password)
 {
 	WriteString(ssid, EEPROM_SSID_KEY);
-	WriteString(password, EEPROM_PASSWORD_KEY);
+	int res = WriteString(password, EEPROM_PASSWORD_KEY);
+	ESP_LOGI("EEPROM", "write %x %s", res, password);
+
+	char tmp[32];
+	res = ReadString(tmp, EEPROM_PASSWORD_KEY);
+	ESP_LOGI("EEPROM", "read %x %s", res, tmp);
 }
 
 void Eeprom::ReadTimezone(int& tz)
@@ -88,7 +94,7 @@ esp_err_t Eeprom::ReadString(char* value, const char* key)
 	}
 
 	size_t size;
-	res = nvs_get_str(nvsHandle, key, (char*)value, &size);
+	res = nvs_get_str(nvsHandle, key, value, &size);
 	nvs_close(nvsHandle);
 	return res;
 }

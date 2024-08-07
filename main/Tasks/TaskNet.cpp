@@ -197,6 +197,7 @@ void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t e
 	}
 	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
 	{
+		ESP_LOGI("NET", "Wifi connecting");
 		esp_wifi_connect();
 	}
 	else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED)
@@ -204,10 +205,12 @@ void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t e
 	}
 	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
 	{
+		//ESP_LOGI("NET", "Wifi reconnecting");
+		esp_wifi_connect();
 	}
 	else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
 	{
-		ESP_LOGI("NET", "got ip");
+		ESP_LOGI("NET", "Got ip");
 	}
 	else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_START)
 	{
@@ -291,10 +294,11 @@ esp_err_t TaskNet::DateTimePost(httpd_req_t* req)
 	}
 
 	tm dt;
+	ESP_LOGI("NET", "Request\n%s", request);
 	char* begin = request+1+strlen(DATETIME_KEY);
-	dt.tm_year = atoi(begin);
+	dt.tm_year = atoi(begin)-1900;
 	begin = strchr(begin, '-')+1;
-	dt.tm_mon = atoi(begin);
+	dt.tm_mon = atoi(begin)-1;
 	begin = strchr(begin, '-')+1;
 	dt.tm_mday = atoi(begin);
 	begin = strchr(begin, 'T')+1;
@@ -347,7 +351,7 @@ esp_err_t TaskNet::DateTimeGet(httpd_req_t* req)
 	{
 		tm dt = taskNet->GetTime();
 		sprintf(buf, "{\"datetime\":\"%d-%d-%d %d:%d:%d\"}", dt.tm_year+1900, dt.tm_mon+1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-		//sprintf(buf, "{\"datetime\":\"1234-5-6 7:8:9\"}");
+		ESP_LOGI("NET", "Response\n%s", buf);
 		httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
 	}
 	else

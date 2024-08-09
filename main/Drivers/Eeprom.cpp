@@ -31,19 +31,16 @@ void Eeprom::Init()
 
 void Eeprom::ReadWifiCredentials(char* ssid, char* password)
 {
-	ReadString(ssid, EEPROM_SSID_KEY);
-	ReadString(password, EEPROM_PASSWORD_KEY);
+	size_t size = SSID_SIZE;
+	ReadString(ssid, EEPROM_SSID_KEY, size);
+	size = PASSWORD_SIZE;
+	ReadString(password, EEPROM_PASSWORD_KEY, size);
 }
 
 void Eeprom::WriteWifiCredentials(const char* ssid, const char* password)
 {
 	WriteString(ssid, EEPROM_SSID_KEY);
-	int res = WriteString(password, EEPROM_PASSWORD_KEY);
-	ESP_LOGI("EEPROM", "write %x %s", res, password);
-
-	char tmp[32];
-	res = ReadString(tmp, EEPROM_PASSWORD_KEY);
-	ESP_LOGI("EEPROM", "read %x %s", res, tmp);
+	WriteString(password, EEPROM_PASSWORD_KEY);
 }
 
 void Eeprom::ReadTimezone(int& tz)
@@ -61,13 +58,15 @@ void Eeprom::WriteTimezone(int tz)
 void Eeprom::CheckWifiCredentials()
 {
 	char value[32];
-	esp_err_t res = ReadString(value, EEPROM_SSID_KEY);
+	size_t size = SSID_SIZE;
+	esp_err_t res = ReadString(value, EEPROM_SSID_KEY, size);
 	if(res != ESP_OK)
 	{
 		WriteString("", EEPROM_SSID_KEY);
 	}
 
-	res = ReadString(value, EEPROM_PASSWORD_KEY);
+	size = PASSWORD_SIZE;
+	res = ReadString(value, EEPROM_PASSWORD_KEY, size);
 	if(res != ESP_OK)
 	{
 		WriteString("", EEPROM_PASSWORD_KEY);
@@ -84,7 +83,7 @@ void Eeprom::CheckTimezone()
 	}
 }
 
-esp_err_t Eeprom::ReadString(char* value, const char* key)
+esp_err_t Eeprom::ReadString(char* value, const char* key, size_t& size)
 {
 	nvs_handle_t nvsHandle;
 	esp_err_t res = nvs_open(NAMESPACE, NVS_READWRITE, &nvsHandle);
@@ -93,7 +92,6 @@ esp_err_t Eeprom::ReadString(char* value, const char* key)
 		return res;
 	}
 
-	size_t size;
 	res = nvs_get_str(nvsHandle, key, value, &size);
 	nvs_close(nvsHandle);
 	return res;

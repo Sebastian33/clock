@@ -181,7 +181,7 @@ extern "C" void app_main(void)
 		if((bits & MAIN_NTP_SYNC) != 0)
 		{
 			esp_err_t res = taskNet.NtpSync(dt);
-			ESP_LOGI("MAIN", "sync: %d-%d-%d %d %d %d", dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+			//ESP_LOGI("MAIN", "sync: %d-%d-%d %d %d %d", dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
 			if(res != ESP_OK)
 			{
 				if(sync==0  && retries<5)
@@ -195,7 +195,7 @@ extern "C" void app_main(void)
 			}
 
 			taskNet.addTimezone(dt, timezone);
-			//taskNet.SetTime(dt);
+			taskNet.SetTime(dt);
 			xEventGroupSetBits(eventGroup, MAIN_UPDATE_TIME);
 			sync = 1;
 		}

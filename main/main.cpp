@@ -103,7 +103,6 @@ extern "C" void app_main(void)
 
 	TaskNet taskNet;
 	eeprom.ReadWifiCredentials(taskNet.GetPointerSsid(),taskNet.GetPointerPassword());
-	ESP_LOGI("MAIN", "%s %s", taskNet.GetPointerSsid(),taskNet.GetPointerPassword());
 
 	InitPwm();
 	InitOutput();
@@ -121,6 +120,7 @@ extern "C" void app_main(void)
 	tm dt;
 	int timezone = 0;
 	eeprom.ReadTimezone(timezone);
+	ESP_LOGI("MAIN","%d", timezone);
 	int sync = 0;
 	int retries = 0;
 
@@ -146,7 +146,7 @@ extern "C" void app_main(void)
 					((timezone>=0 && dt.tm_hour+timezone==1) ||
 					(timezone<0 && dt.tm_hour-timezone==23)))
 			{
-				//xEventGroupSetBits(eventGroup, MAIN_NTP_SYNC);
+				xEventGroupSetBits(eventGroup, MAIN_NTP_SYNC);
 			}
 			else if(sync<0)
 			{

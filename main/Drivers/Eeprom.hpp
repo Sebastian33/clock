@@ -15,8 +15,8 @@ public:
 private:
 	esp_err_t ReadString(char* value, const char* key);
 	esp_err_t WriteString(const char* value, const char* key);
-	esp_err_t ReadI8(char& value, const char* key);
-	esp_err_t WriteI8(char value, const char* key);
+	esp_err_t ReadI8(int8_t& value, const char* key);
+	esp_err_t WriteI8(int8_t value, const char* key);
 
 	void CheckWifiCredentials();
 	void CheckTimezone();

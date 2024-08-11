@@ -9,8 +9,9 @@ using u8 = unsigned char;
 using u32 = unsigned;
 using u64 = unsigned long long;
 
-const int SSID_SIZE = 32;
-const int PASSWORD_SIZE = 32;
+const int DEFAULT_REC_SIZE = 32;
+const int SSID_SIZE = DEFAULT_REC_SIZE;
+const int PASSWORD_SIZE = DEFAULT_REC_SIZE;
 
 const unsigned MAIN_UPDATE_TIME (1<<0);
 const unsigned MAIN_CP_TIME (1<<1);

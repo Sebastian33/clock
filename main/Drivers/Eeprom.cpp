@@ -1,5 +1,5 @@
 #include "Eeprom.hpp"
-
+#include <cstring>
 #include "esp_log.h"
 const char NAMESPACE[] = "storage";
 
@@ -43,13 +43,14 @@ void Eeprom::WriteWifiCredentials(const char* ssid, const char* password)
 
 void Eeprom::ReadTimezone(int& tz)
 {
-	char val;
+	int8_t val;
 	ReadI8(val, EEPROM_TIMEZONE_KEY);
 	tz = val;
 }
 
 void Eeprom::WriteTimezone(int tz)
 {
+	ESP_LOGI("EEPROM", "write tz %d", tz);
 	WriteI8(tz, EEPROM_TIMEZONE_KEY);
 }
 
@@ -62,6 +63,7 @@ void Eeprom::CheckWifiCredentials()
 		WriteString("", EEPROM_SSID_KEY);
 	}
 
+	//memset(value, 0, 32);
 	res = ReadString(value, EEPROM_PASSWORD_KEY);
 	if(res != ESP_OK)
 	{
@@ -71,7 +73,7 @@ void Eeprom::CheckWifiCredentials()
 
 void Eeprom::CheckTimezone()
 {
-	char tz=0;
+	int8_t tz=0;
 	esp_err_t res = ReadI8(tz, EEPROM_TIMEZONE_KEY);
 	if(res != ESP_OK)
 	{
@@ -88,7 +90,7 @@ esp_err_t Eeprom::ReadString(char* value, const char* key)
 		return res;
 	}
 
-	size_t size = 0;
+	size_t size = DEFAULT_REC_SIZE;
 	res = nvs_get_str(nvsHandle, key, value, &size);
 	nvs_close(nvsHandle);
 	return res;
@@ -115,7 +117,7 @@ esp_err_t Eeprom::WriteString(const char* value, const char* key)
 	return res;
 }
 
-esp_err_t Eeprom::ReadI8(char& value, const char* key)
+esp_err_t Eeprom::ReadI8(int8_t& value, const char* key)
 {
 	nvs_handle_t nvsHandle;
 	esp_err_t res = nvs_open(NAMESPACE, NVS_READWRITE, &nvsHandle);
@@ -124,13 +126,15 @@ esp_err_t Eeprom::ReadI8(char& value, const char* key)
 		return res;
 	}
 
-	res = nvs_get_i8(nvsHandle, key, (int8_t*)&value);
+	res = nvs_get_i8(nvsHandle, key, &value);
+	ESP_LOGI("EEPROM", "read %d", value);
 	nvs_close(nvsHandle);
 	return res;
 }
 
-esp_err_t Eeprom::WriteI8(char value, const char* key)
+esp_err_t Eeprom::WriteI8(int8_t value, const char* key)
 {
+	ESP_LOGI("EEPROM", "write i8 %d", value);
 	nvs_handle_t nvsHandle;
 	esp_err_t res = nvs_open(NAMESPACE, NVS_READWRITE, &nvsHandle);
 	if(res != ESP_OK)

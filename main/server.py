@@ -50,6 +50,10 @@ class WebRequestHandler(BaseHTTPRequestHandler):
                 now = time.localtime()
                 rsp = '{"datetime":"'+str(now.tm_year)+'-'+str(now.tm_mon)+'-'+str(now.tm_mday)+' '+str(now.tm_hour)+':'+str(now.tm_min)+':'+str(now.tm_sec)+'"}'
                 self.wfile.write(rsp.encode())
+        elif self.path=='/info':
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"online":true}')
         else:
             print("here")
             self.end_headers()

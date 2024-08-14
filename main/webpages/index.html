@@ -2,9 +2,15 @@
 <head>
 <title>Configuration</title>
 </head>
-<body>
+<body onload="getInfo()">
+
+<p>
+Online: 
+<label id="online"></label>
+</p>
 
 <h2>Time</h2>
+
 <form name="DateTimeForm" action="/datetime" method="post">
   <input type="datetime-local" id="dt" name="dt" required>
   <br>
@@ -12,9 +18,15 @@
   <input type="submit" value="Set date and time">
   <!--input type="button" value="submit" onclick="postDT()"-->
 </form>
-<input type="button" value="Get Time" onclick="getDateTime()">
+
+<p>
+Current DateTime: 
+<label id="retdt"></label>
 <br>
 <br>
+<input type="button" value="Get Time" onclick="getDateTime()"> 
+</p>
+
 <form name="TimezoneForm" action="/timezone" method="post">
   <label for="timezone">Timezone:</label><br>
   <input type="number" name="timezone" min="-12" max="12" required><br>
@@ -23,6 +35,7 @@
 </form>
 
 <h2>Wifi credentials</h2>
+
 <form name="WifiForm" action="/wifi" method="post">
   <label for="ssid">SSID:</label><br>
   <input type="text" name="ssid" required><br>
@@ -63,6 +76,17 @@
 			return;
 		}
 		let json = await res.json();
-		alert(json.datetime)
+		window.document.getElementById('retdt').innerHTML = json.datetime;
+	}
+	
+	async function getInfo()
+	{
+		res = await fetch(window.location+'info');
+		if (!res.ok)
+		{
+			return;
+		}
+		let json = await res.json();
+		window.document.getElementById('online').innerHTML = json.online;
 	}
 </script>

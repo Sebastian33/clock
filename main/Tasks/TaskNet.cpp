@@ -111,6 +111,11 @@ void TaskNet::SetMainEvent(unsigned event)
 
 esp_err_t TaskNet::NtpSync(tm& dt)
 {
+	if(!taskNet->onlineMode)
+	{
+		return ESP_FAIL;
+	}
+
 	hostent* info = gethostbyname(NTP_SERVER_URL);
 	if(info->h_addr_list==nullptr)
 	{
@@ -205,12 +210,13 @@ void TaskNet::wifiEventHandler(void* arg, esp_event_base_t event_base, int32_t e
 	}
 	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
 	{
-		//ESP_LOGI("NET", "Wifi reconnecting");
+		taskNet->onlineMode = false;
 		esp_wifi_connect();
 	}
 	else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
 	{
 		ESP_LOGI("NET", "Got ip");
+		taskNet->onlineMode = true;
 	}
 	else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_START)
 	{
@@ -462,6 +468,21 @@ esp_err_t TaskNet::TimezonePost(httpd_req_t* req)
 	taskNet->SetMainEvent(MAIN_SET_TZ);
 
 	httpd_resp_send(req, "Ok", HTTPD_RESP_USE_STRLEN);
+	return ESP_OK;
+}
+
+static const httpd_uri_t infoGetD = {
+	"/info",
+	HTTP_GET,
+	TaskNet::InfoGet,
+	nullptr
+};
+
+esp_err_t TaskNet::InfoGet(httpd_req_t* req)
+{
+	char rsp[32];
+	sprintf(rsp, "{\"online\":%s}", taskNet->onlineMode ? "true" : "false");
+	httpd_resp_send(req, rsp, HTTPD_RESP_USE_STRLEN);
 	return ESP_OK;
 }
 

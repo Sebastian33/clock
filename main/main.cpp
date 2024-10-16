@@ -11,6 +11,8 @@
 #include "Drivers/Eeprom.hpp"
 #include "Tasks/TaskNet.hpp"
 
+#include "driver/adc.h"
+
 #include "esp_log.h"
 
 const gpio_num_t GPIO_SRCLK = GPIO_NUM_12;
@@ -120,10 +122,17 @@ extern "C" void app_main(void)
 	tm dt;
 	int timezone = 0;
 	eeprom.ReadTimezone(timezone);
-	ESP_LOGI("MAIN","%d", timezone);
+	//ESP_LOGI("MAIN","%d", timezone);
 	int sync = 0;
 	int retries = 0;
 
+	//ADC EXPERIMENTS
+	adc1_config_width(ADC_WIDTH_BIT_12);
+	adc1_config_channel_atten(ADC1_CHANNEL_4,ADC_ATTEN_DB_6);
+	int counter=0;
+	//ADC EXPERIMENTS
+
+	vTaskDelay(5000 / portTICK_PERIOD_MS);
 	while(true)
 	{
 		bits = xEventGroupWaitBits(eventGroup,
@@ -135,6 +144,21 @@ extern "C" void app_main(void)
 				true, false, 500 / portTICK_PERIOD_MS);
 		if(bits == 0)
 		{
+			//ADC EXPERIMENTS
+			int adc=adc1_get_raw(ADC1_CHANNEL_4);
+			ESP_LOGI("MAIN", "ADC: %d", adc);
+			counter++;
+			if(counter>10)
+			{
+				counter=0;
+				if(adc>3000)
+					ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 7200);
+				else
+					ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 4096);
+				ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+			}
+			//ADC EXPERIMENTS
+
 			dt = rtc.ReadDateTime();
 
 			if(dt.tm_hour == 0 && sync != 0)
@@ -161,7 +185,6 @@ extern "C" void app_main(void)
 			sendTime(buf, dots);
 
 			dots=dots^1;
-			//vTaskDelay(500 / portTICK_PERIOD_MS);
 			continue;
 		}
 

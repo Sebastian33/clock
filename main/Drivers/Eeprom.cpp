@@ -127,14 +127,14 @@ esp_err_t Eeprom::ReadI8(int8_t& value, const char* key)
 	}
 
 	res = nvs_get_i8(nvsHandle, key, &value);
-	ESP_LOGI("EEPROM", "read %d", value);
+	//ESP_LOGI("EEPROM", "read %d", value);
 	nvs_close(nvsHandle);
 	return res;
 }
 
 esp_err_t Eeprom::WriteI8(int8_t value, const char* key)
 {
-	ESP_LOGI("EEPROM", "write i8 %d", value);
+	//ESP_LOGI("EEPROM", "write i8 %d", value);
 	nvs_handle_t nvsHandle;
 	esp_err_t res = nvs_open(NAMESPACE, NVS_READWRITE, &nvsHandle);
 	if(res != ESP_OK)

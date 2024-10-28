@@ -3,15 +3,13 @@
 #include <stdio.h>
 #include "esp_system.h"
 #include "esp_spi_flash.h"
-#include "driver/ledc.h"
 #include "driver/gpio.h"
 #include <time.h>
 
 #include "Drivers/RTCDriver.hpp"
 #include "Drivers/Eeprom.hpp"
 #include "Tasks/TaskNet.hpp"
-
-#include "driver/adc.h"
+#include "Tasks/TaskPwm.hpp"
 
 #include "esp_log.h"
 
@@ -33,27 +31,6 @@ const u8* getIndexPageStart()
 const u8* getIndexPageEnd()
 {
 	return index_page_end;
-}
-
-void InitPwm()
-{
-	ledc_timer_config_t timer;
-	timer.speed_mode = LEDC_LOW_SPEED_MODE;
-	timer.timer_num = LEDC_TIMER_0;
-	timer.duty_resolution = LEDC_TIMER_13_BIT;
-	timer.freq_hz = 5000;
-	timer.clk_cfg = LEDC_AUTO_CLK;
-	ledc_timer_config(&timer);
-
-	ledc_channel_config_t ledc_channel;
-	ledc_channel.speed_mode = LEDC_LOW_SPEED_MODE;
-	ledc_channel.channel = LEDC_CHANNEL_0;
-	ledc_channel.timer_sel = LEDC_TIMER_0;
-	ledc_channel.intr_type =  LEDC_INTR_FADE_END;
-	ledc_channel.gpio_num = GPIO_PWM;
-	ledc_channel.duty = 4096;
-	ledc_channel.hpoint = 0;
-	ledc_channel_config(&ledc_channel);
 }
 
 void InitOutput()
@@ -106,7 +83,8 @@ extern "C" void app_main(void)
 	TaskNet taskNet;
 	eeprom.ReadWifiCredentials(taskNet.GetPointerSsid(),taskNet.GetPointerPassword());
 
-	InitPwm();
+	TaskPwm taskPwm(GPIO_PWM);
+
 	InitOutput();
 
 	RTCDriver rtc;
@@ -115,6 +93,8 @@ extern "C" void app_main(void)
 	EventGroupHandle_t eventGroup = xEventGroupCreate();
 
 	taskNet.Init(&eventGroup);
+	taskPwm.Init(&eventGroup);
+	taskPwm.Start();
 
 	u8 dots=0;
 	u8 buf[4];
@@ -125,12 +105,6 @@ extern "C" void app_main(void)
 	//ESP_LOGI("MAIN","%d", timezone);
 	int sync = 0;
 	int retries = 0;
-
-	//ADC EXPERIMENTS
-	adc1_config_width(ADC_WIDTH_BIT_12);
-	adc1_config_channel_atten(ADC1_CHANNEL_4,ADC_ATTEN_DB_6);
-	int counter=0;
-	//ADC EXPERIMENTS
 
 	vTaskDelay(5000 / portTICK_PERIOD_MS);
 	while(true)
@@ -144,21 +118,6 @@ extern "C" void app_main(void)
 				true, false, 500 / portTICK_PERIOD_MS);
 		if(bits == 0)
 		{
-			//ADC EXPERIMENTS
-			int adc=adc1_get_raw(ADC1_CHANNEL_4);
-			ESP_LOGI("MAIN", "ADC: %d", adc);
-			counter++;
-			if(counter>10)
-			{
-				counter=0;
-				if(adc>3000)
-					ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 7200);
-				else
-					ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 4096);
-				ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-			}
-			//ADC EXPERIMENTS
-
 			dt = rtc.ReadDateTime();
 
 			if(dt.tm_hour == 0 && sync != 0)

@@ -1,6 +1,8 @@
 #include "TaskPwm.hpp"
 #include "driver/adc.h"
 
+#include "esp_log.h"
+
 const ledc_mode_t PWM_SPEED_MODE = LEDC_LOW_SPEED_MODE;
 const ledc_channel_t PWM_CHANNEL = LEDC_CHANNEL_0;
 
@@ -48,15 +50,17 @@ void TaskPwm::Run(void* args)
 	while(true)
 	{
 		int adc=adc1_get_raw(ADC_CHANNEL);
-		//ESP_LOGI("MAIN", "ADC: %d", adc);
+		ESP_LOGI("MAIN", "ADC: %d", adc);
 		counter++;
 		if(counter>10)
 		{
 			counter=0;
 			if(adc>3000)
-				ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 7200);
+				ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 1024);
+			else if(adc>1000 && adc<=3000)
+				ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 2048);
 			else
-				ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 4096);
+				ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 7200);
 			ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 		}
 

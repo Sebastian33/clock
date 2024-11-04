@@ -10,6 +10,14 @@ const adc1_channel_t ADC_CHANNEL = ADC1_CHANNEL_4;
 
 const u32 TASK_PWM_PRIORITY = configMAX_PRIORITIES-5;
 
+const int MEAS_NUM = 10;
+const int ADC_BRIGHT_LEVEL = 1000;
+const int ADC_DIM_LEVEL = 3000;
+
+const int PWM_DUTY_BRIGHT = 7168;
+const int PWM_DUTY_HALF_BRIGHT = 2048;
+const int PWM_DUTY_DIM = 1024;
+
 TaskPwm::TaskPwm(gpio_num_t gpioPwm0): gpioPwm(gpioPwm0), mainEventGroup(nullptr)
 {}
 
@@ -46,24 +54,34 @@ void TaskPwm::Start()
 
 void TaskPwm::Run(void* args)
 {
-	int counter=0;
+	int adc = 0;
+	int duty = 0;
+	int newDuty = 0;
 	while(true)
 	{
-		int adc=adc1_get_raw(ADC_CHANNEL);
-		ESP_LOGI("MAIN", "ADC: %d", adc);
-		counter++;
-		if(counter>10)
+		for(int i=0;i<MEAS_NUM;i++)
 		{
-			counter=0;
-			if(adc>3000)
-				ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 1024);
-			else if(adc>1000 && adc<=3000)
-				ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 2048);
-			else
-				ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 7200);
+			adc += adc1_get_raw(ADC_CHANNEL);
+			//ESP_LOGI("MAIN", "ADC: %d", adc);
+			vTaskDelay(1000 / portTICK_PERIOD_MS);
+		}
+
+		adc /= MEAS_NUM;
+		if(adc>(ADC_DIM_LEVEL+50))
+			newDuty = PWM_DUTY_DIM;
+		else if( adc>(ADC_BRIGHT_LEVEL+50) && adc<=(ADC_DIM_LEVEL-50))
+			newDuty = PWM_DUTY_HALF_BRIGHT;
+		else if (adc<=(ADC_BRIGHT_LEVEL-50))
+			newDuty = PWM_DUTY_BRIGHT;
+
+		if(duty != newDuty)
+		{
+			duty = newDuty;
+			ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
 			ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 		}
 
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		adc = 0;
+		vTaskDelay(20000 / portTICK_PERIOD_MS);
 	}
 }
